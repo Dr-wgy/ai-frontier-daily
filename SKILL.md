@@ -8,6 +8,52 @@ disable-model-invocation: true
 
 # AI 前沿早报（执行手册）
 
+---
+
+## 0. 前置环境准备（首次使用必看）
+
+### 0.1 确认 Python 与 pip 路径
+
+每个人环境的 Python/pip 路径可能不同，请先确认：
+
+```bash
+# 检查 Python 版本
+which python3
+python3 --version
+
+# 检查 pip 版本
+which pip3
+pip3 --version
+```
+
+### 0.2 安装项目依赖
+
+```bash
+cd ～/.qclaw/skills/ai-frontier-daily
+pip3 install -r requirements.txt
+```
+
+### 0.3 安装 lark-cli
+
+```bash
+# 安装（如未安装）
+brew install lark-cli
+
+# 初始化配置
+lark-cli config init --new
+
+# 登录授权（用于 --as user 操作）
+lark-cli auth login
+```
+
+**验证安装：**
+```bash
+lark-cli --version
+lark-cli docs +create --as user --doc-format markdown --content "# 占位"
+```
+
+---
+
 ## 1. 何时启用 / 何时不用
 
 | 场景 | 处理方式 |
@@ -25,7 +71,7 @@ disable-model-invocation: true
 ### 2.1 一键执行（正常流程）
 
 ```bash
-cd /Users/huangxingbiao/.qclaw/skills/ai-frontier-daily
+cd ～/.qclaw/skills/ai-frontier-daily
 python3 project-space/pipeline.py --date "YYYY-MM-DD"
 ```
 
@@ -35,7 +81,7 @@ python3 project-space/pipeline.py --date "YYYY-MM-DD"
 ### 2.2 分步执行（排错）
 
 ```bash
-cd /Users/huangxingbiao/.qclaw/skills/ai-frontier-daily
+cd ～.qclaw/skills/ai-frontier-daily
 python3 project-space/pipeline.py --steps ingest
 python3 project-space/pipeline.py --steps filter_rank
 python3 project-space/pipeline.py --steps summarize
@@ -104,7 +150,7 @@ lark-cli wiki nodes list --as user \
 发布完成后必须向群内推送交互式卡片通知：
 
 ```bash
-cd /Users/huangxingbiao/.qclaw/skills/ai-frontier-daily
+cd ～/.qclaw/skills/ai-frontier-daily
 python3 project-space/push_feishu_bot.py \
   --date "YYYY-MM-DD" \
   --doc-url "https://xxx.feishu.cn/…"
