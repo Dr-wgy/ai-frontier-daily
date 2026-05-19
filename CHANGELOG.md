@@ -1,5 +1,44 @@
 ## 变更日志
 
+### 2026-05-19 (commit: 1fef247)，作者：Dr-wgylmg1210
+
+#### 研发工程
+
+- **SKILL.md** - 发布后流程重构，引用独立文档
+  - 发布后流程拆分至 POST_PUBLISH.md
+  - 简化主文档，保留流程概览
+- **postact-space/POST_PUBLISH.md** - 新增发布后流程文档
+  - 飞书知识库发布（同名去重 + 新建归档）
+  - 群机器人 Webhook 推送
+  - 从 SKILL.md 拆分独立管理
+- **postact-space/push_feishu_bot** - 从 project-space 迁移至 postact-space
+  - 调整路径引用（_PROJECT_SPACE → _POSTACT_SPACE）
+  - 优化导入结构
+- **assemble** - 影响字段重构
+  - impact_1/impact_2 → impacts（数组）
+  - 更新过滤逻辑和日志输出
+- **config** - 配置优化
+  - 极客公园源注释（TCP 连接超时）
+  - InfoQ 源关闭 SSL 认证
+  - default_max_tokens 提升至 81920
+- **ingest** - 数据抓取优化
+  - 添加 urllib3 禁用 SSL 警告
+  - _fetch() 添加连接超时参数（5秒）
+  - 添加抓取耗时日志
+- **briefing-template** - 模板结构调整
+  - 今日速览移至正文前
+  - 影响字段改为数组渲染
+  - 标签/链接改为引用块样式
+
+#### 提示词工程
+
+- **summarizer.md.j2** - 字段协议更新
+  - impact_1/impact_2 → impacts（数组，1～2条）
+  - 更新字段验证规则
+  - 调整输出示例
+
+---
+
 ### 2026-05-16 (commit: -)，作者：wghlmg1210
 
 #### 研发工程

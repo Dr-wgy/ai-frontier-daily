@@ -117,8 +117,7 @@ class SummaryItem(FilteredItem):
     """LLM 摘要增强后的新闻条目"""
     headline: str = ''
     plain_explain: str = ''
-    impact_1: str = ''
-    impact_2: str = ''
+    impacts: List[str] = field(default_factory=list)
     digest_for_outline: str = ''
     vertical_tags: List[str] = field(default_factory=list)
     general_tags: List[str] = field(default_factory=list)
@@ -175,8 +174,7 @@ class SummaryItem(FilteredItem):
             rank=filtered_item.rank,
             headline=llm_data.get('headline', ''),
             plain_explain=llm_data.get('plain_explain', ''),
-            impact_1=llm_data.get('impact_1', ''),
-            impact_2=llm_data.get('impact_2', ''),
+            impacts=llm_data.get('impacts', []) if isinstance(llm_data.get('impacts'), list) else [],
             digest_for_outline=llm_data.get('digest_for_outline', ''),
             vertical_tags=vertical_tags,
             general_tags=general_tags,
@@ -206,8 +204,7 @@ class SummaryItem(FilteredItem):
             rank=int(d.get('rank', 0)),
             headline=d.get('headline', ''),
             plain_explain=d.get('plain_explain', ''),
-            impact_1=d.get('impact_1', ''),
-            impact_2=d.get('impact_2', ''),
+            impacts=d.get('impacts', []) if isinstance(d.get('impacts'), list) else [],
             digest_for_outline=d.get('digest_for_outline', ''),
             vertical_tags=vertical_tags,
             general_tags=general_tags,

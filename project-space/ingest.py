@@ -21,6 +21,8 @@ from utils.domain import NewsItem
 
 try:
     import requests
+    import urllib3
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 except ImportError:
     requests = None
 
@@ -112,7 +114,7 @@ class IngestModule(WorkModule):
     def _fetch(self, url: str, headers: dict, timeout: float, retries: int, backoff: float, verify: bool) -> Optional[bytes]:
         for attempt in range(retries):
             try:
-                resp = requests.get(url, headers=headers, timeout=timeout, verify=verify)
+                resp = requests.get(url, headers=headers, timeout=(5, timeout), verify=verify)
                 resp.raise_for_status()
                 return resp.content
             except Exception:
@@ -213,7 +215,7 @@ class IngestModule(WorkModule):
                     scraped = self._scrape_article_content(link)
                     if scraped and len(scraped) > 50:
                         summary = scraped
-                        print(f"  [INFO] 成功抓取 {len(summary)} 字符")
+                        # print(f"  [INFO] 成功抓取 {len(summary)} 字符")
                     else:
                         summary = ''  # 仍然为空
                 item = {'title': title, 'url': link.strip(), 'source': source, 'summary': summary}
@@ -257,7 +259,9 @@ class IngestModule(WorkModule):
             if not url:
                 continue
 
+            _t0 = time.monotonic()
             body = self._fetch(url, headers, timeout, retries, backoff, feed.get('verify_tls', True))
+            
             if body is None:
                 errors += 1
                 continue
@@ -277,6 +281,7 @@ class IngestModule(WorkModule):
                 it['_feed_url'] = url
                 all_items.append(it)
                 kept += 1
+            print(f"  [fetch] {time.monotonic() - _t0:.2f}s  {url}")
 
         # 按时间排序
         def sort_key(it):

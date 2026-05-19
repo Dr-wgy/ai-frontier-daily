@@ -42,8 +42,7 @@ class AssembleModule(WorkModule):
             'url': it.url or '#',
             'summary': summary,
             'plain_explain': it.plain_explain,
-            'impact_1': it.impact_1,
-            'impact_2': it.impact_2,
+            'impacts': it.impacts if isinstance(it.impacts, list) else [],
             'hot': it.hot,
             'vertical_tags': vertical_tags,
             'general_tags': general_tags,
@@ -81,12 +80,11 @@ class AssembleModule(WorkModule):
             summary_items = []
             for it in mod_items:
                 has_plain = bool(it.plain_explain)
-                has_impact1 = bool(it.impact_1)
-                has_impact2 = bool(it.impact_2)
-                if has_plain or has_impact1 or has_impact2:
+                has_impacts = bool(it.impacts)
+                if has_plain or has_impacts:
                     summary_items.append(it)
                 else:
-                    print(f"[过滤] [{m.name}] 标题: {it.title[:50]}... 原因: plain_explain={has_plain}, impact_1={has_impact1}, impact_2={has_impact2}")
+                    print(f"[过滤] [{m.name}] 标题: {it.title[:50]}... 原因: plain_explain={has_plain}, impacts={has_impacts}")
             entries = [self._news_row(f"{i}.{j+1}", it, cap) for j, it in enumerate(summary_items)]
             sections.append({'heading': f"## {cn}、{m.name}\n", 'empty': not summary_items, 'entries': entries})
 

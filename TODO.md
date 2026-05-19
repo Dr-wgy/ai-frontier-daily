@@ -1,11 +1,15 @@
 # AI Frontier Daily TODO
 
 ## 已完成
-~~1. ingested.jsonl 中「点击查看原文>」需要进行处理（InfoQ）~~
 
-~~4. 白话 & 影响为空的部分注意~~
+[x] 1. ingested.jsonl 中「点击查看原文>」需要进行处理（InfoQ）-- 针对性 处理？
+[x] 2. ingest from 极客公园 请求严重延迟问题 -- 源异常 剔除
+[x] 3. ingest from infoq 中文 SSL异常 -- 关闭SSL认证
+[x] 4. bugfix -- 表现：部分新闻的「白话&影响」为空
+[x] 5. 迭代：影响数量 1～2 条
+[x] 6. 调整 内容模块结构（信息块 -> 今日速览 -> 各模块正文）
 
 ## 待处理
-2. 精简 LLM 的 INPUT 内容
-3. 影响数量降低
-5. 拆板块 summary
+[ ] 7. 精简 LLM的INPUT内容
+[ ] 8. 将主链路之后的动作 拆分出来，补充结果渲染动作
+[ ] 9. 调研workflow

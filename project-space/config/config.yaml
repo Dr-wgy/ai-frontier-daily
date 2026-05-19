@@ -14,10 +14,10 @@ public_feeds:
   feeds:                              # 数据源列表
     - {source: "36氪", url: "https://36kr.com/feed", verify_tls: true}
     - {source: "雷锋网", url: "https://www.leiphone.com/feed", verify_tls: true}
-    - {source: "极客公园", url: "https://www.geekpark.net/rss", verify_tls: true}
+    # - {source: "极客公园", url: "https://www.geekpark.net/rss", verify_tls: false} # www.geekpark.net:443 TCP 连接超时，当前网络环境不可达
     - {source: "IT之家", url: "https://www.ithome.com/rss/", verify_tls: true}
     - {source: "量子位", url: "https://www.qbitai.com/feed", verify_tls: true}
-    - {source: "InfoQ中文", url: "https://www.infoq.cn/feed", verify_tls: true}
+    - {source: "InfoQ中文", url: "https://www.infoq.cn/feed", verify_tls: false} # 内容质量 & 双层解析 & 关闭SSL认证
     - {source: "开源中国", url: "https://www.oschina.net/news/rss", verify_tls: true}
     - {source: "机器之心", url: "https://www.jiqizhixin.com/rss", verify_tls: false}
 
@@ -53,7 +53,7 @@ assembly:
 # 配置大语言模型的调用参数
 llm:
   default_temperature: 0.3            # 默认温度参数（0-1，越低越确定性）
-  default_max_tokens: 40960           # 默认最大生成token数
+  default_max_tokens: 81920           # 默认最大生成token数
   filter_rank_max_tokens: 8192       # 筛选排序阶段最大token数
   summarize_max_tokens: 20480        # 摘要生成阶段最大token数
   summarize_item_cap: 1800           # 单条新闻摘要字符上限
@@ -68,8 +68,7 @@ protocol:
     fields:
       - {name: "headline", type: "string", desc: "标题（融合价值点+事件概括，40-50字）"}
       - {name: "plain_explain", type: "string", desc: "白话解释（面向普通用户，≤120字符）"}
-      - {name: "impact_1", type: "string", desc: "影响/后果一（~30字）"}
-      - {name: "impact_2", type: "string", desc: "影响/后果二（~30字）"}
+      - {name: "impacts", type: "string[]", desc: "影响/后果列表（至少1条，每条~30字）"}
       - {name: "digest_for_outline", type: "string", desc: "概要（供正文使用，≤500字）"}
       - {name: "main_section", type: "string", desc: "主板块（5大板块之一）"}
       - {name: "sub_section", type: "string", desc: "子栏目"}

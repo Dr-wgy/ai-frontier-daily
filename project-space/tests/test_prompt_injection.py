@@ -19,8 +19,7 @@ def _make_mock_protocol_config() -> ProtocolLayerConfig:
                 'fields': [
                     {'name': 'headline', 'type': 'string', 'desc': '标题'},
                     {'name': 'plain_explain', 'type': 'string', 'desc': '白话解释'},
-                    {'name': 'impact_1', 'type': 'string', 'desc': '影响一'},
-                    {'name': 'impact_2', 'type': 'string', 'desc': '影响二'},
+                    {'name': 'impacts', 'type': 'string[]', 'desc': '影响列表'},
                     {'name': 'digest_for_outline', 'type': 'string', 'desc': '概要'},
                     {'name': 'main_section', 'type': 'string', 'desc': '主板块'},
                     {'name': 'sub_section', 'type': 'string', 'desc': '子栏目'},

@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 import urllib.error
@@ -30,8 +29,8 @@ from typing import Any
 
 # 设置路径
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
-_PROJECT_SPACE = _PROJECT_ROOT / 'project-space'
-for p in (_PROJECT_ROOT, _PROJECT_SPACE):
+_POSTACT_SPACE = _PROJECT_ROOT / 'postact-space'
+for p in (_PROJECT_ROOT, _POSTACT_SPACE):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 
