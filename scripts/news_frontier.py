@@ -25,7 +25,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import List
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+PROJECT_SPACE = os.path.join(PROJECT_ROOT, 'project-space')
+
+sys.path.insert(0, PROJECT_SPACE)
 
 from utils.base_config import AppConfig
 

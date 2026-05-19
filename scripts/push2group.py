@@ -28,9 +28,11 @@ from pathlib import Path
 from typing import Any
 
 # 设置路径
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_SCRIPT_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = _SCRIPT_DIR.parent
 _POSTACT_SPACE = _PROJECT_ROOT / 'postact-space'
-for p in (_PROJECT_ROOT, _POSTACT_SPACE):
+_PROJECT_SPACE = _PROJECT_ROOT / 'project-space'
+for p in (_PROJECT_ROOT, _POSTACT_SPACE, _PROJECT_SPACE):
     if str(p) not in sys.path:
         sys.path.insert(0, str(p))
 

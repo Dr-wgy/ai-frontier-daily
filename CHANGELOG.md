@@ -1,5 +1,28 @@
 ## 变更日志
 
+### 2026-05-19 (commit: 66cc36f)，作者：wghlmg1210
+
+#### SKILL框架
+
+- **SKILL.md** - 大幅精简重构，Skill 作为标准接口对接 Agent
+  - 简化为 7 个章节，聚焦核心流程
+  - 新增 Lobster 工作流调用方式
+  - 移除复杂的分步执行和排错说明
+- **config/secrets.example.json** - 新增 space_id 字段
+  - 飞书知识库 Space ID 配置项
+- **references/** - 新增工作流定义与说明文档（Skill 标准规范）
+  - **ai-frontier-daily.lobster**：定义 4 步工作流（news_frontier → publish2lark → push2group → final_report）
+  - **PIPELINE.md**：完整描述工作流步骤、数据流图和目录结构
+- **scripts/** - 新增脚本目录（Skill 标准规范）
+  - **init_env.sh**：环境检查和初始化脚本
+  - **news_frontier.py**：从 project-space/pipeline.py 重命名，作为工作流入口
+  - **render_wechat.sh**：微信渲染脚本（从 config/secrets.json 读取配置）
+  - **publish2lark.py**：飞书发布脚本（月份归档、同名去重）
+  - **push2group.py**：从 postact-space/push_feishu_bot.py 重命名
+- **postact-space/POST_PUBLISH.md** - 删除，合并至 references/PIPELINE.md
+
+---
+
 ### 2026-05-19 (commit: 1fef247)，作者：Dr-wgylmg1210
 
 #### 研发工程
