@@ -29,7 +29,7 @@ pip3 --version
 ### 0.2 安装项目依赖
 
 ```bash
-cd ～/.qclaw/skills/ai-frontier-daily
+cd ~/.qclaw/skills/ai-frontier-daily
 pip3 install -r requirements.txt
 ```
 
@@ -71,7 +71,7 @@ lark-cli docs +create --as user --doc-format markdown --content "# 占位"
 ### 2.1 一键执行（正常流程）
 
 ```bash
-cd ～/.qclaw/skills/ai-frontier-daily
+cd ~/.qclaw/skills/ai-frontier-daily
 python3 project-space/pipeline.py --date "YYYY-MM-DD"
 ```
 
@@ -81,7 +81,7 @@ python3 project-space/pipeline.py --date "YYYY-MM-DD"
 ### 2.2 分步执行（排错）
 
 ```bash
-cd ～.qclaw/skills/ai-frontier-daily
+cd ~.qclaw/skills/ai-frontier-daily
 python3 project-space/pipeline.py --steps ingest
 python3 project-space/pipeline.py --steps filter_rank
 python3 project-space/pipeline.py --steps summarize
@@ -150,7 +150,7 @@ lark-cli wiki nodes list --as user \
 发布完成后必须向群内推送交互式卡片通知：
 
 ```bash
-cd ～/.qclaw/skills/ai-frontier-daily
+cd ~/.qclaw/skills/ai-frontier-daily
 python3 project-space/push_feishu_bot.py \
   --date "YYYY-MM-DD" \
   --doc-url "https://xxx.feishu.cn/…"
