@@ -281,7 +281,7 @@ class IngestModule(WorkModule):
                 it['_feed_url'] = url
                 all_items.append(it)
                 kept += 1
-            print(f"  [fetch] {time.monotonic() - _t0:.2f}s  {url}")
+            self.log(f"fetch {time.monotonic() - _t0:.2f}s  {url}", level='INFO')
 
         # 按时间排序
         def sort_key(it):

@@ -84,7 +84,7 @@ class AssembleModule(WorkModule):
                 if has_plain or has_impacts:
                     summary_items.append(it)
                 else:
-                    print(f"[过滤] [{m.name}] 标题: {it.title[:50]}... 原因: plain_explain={has_plain}, impacts={has_impacts}")
+                    self.log(f"[过滤] [{m.name}] 标题: {it.title[:50]}... 原因: plain_explain={has_plain}, impacts={has_impacts}", level='DEBUG')
             entries = [self._news_row(f"{i}.{j+1}", it, cap) for j, it in enumerate(summary_items)]
             sections.append({'heading': f"## {cn}、{m.name}\n", 'empty': not summary_items, 'entries': entries})
 
