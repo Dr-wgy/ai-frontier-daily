@@ -48,6 +48,7 @@ config/secrets.json
 skills
 skills-lock.json
 .idea/
+project-space/logs/
 
 
 todolist/
