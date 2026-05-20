@@ -21,20 +21,21 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-md dark:border-slate-800/70 dark:bg-slate-950/80">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 border-b border-neutral-800/60 bg-[#0a0a0a]/90 backdrop-blur-xl">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="group flex items-center gap-2 text-lg font-bold tracking-tight text-slate-900 dark:text-slate-50"
+          className="group flex items-center gap-2.5 text-sm font-semibold tracking-tight text-neutral-200"
         >
+          {/* Logo dot */}
           <span
             aria-hidden="true"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 via-indigo-500 to-violet-500 text-base text-white shadow-md transition-transform group-hover:scale-105"
+            className="relative flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-amber-400 to-orange-500 text-[10px] font-bold text-black transition-transform group-hover:scale-110"
           >
-            🤖
+            AI
           </span>
           <span>
-            AI <span className="text-blue-600 dark:text-blue-400">前沿</span>日报
+            前沿<span className="text-amber-400/80">日报</span>
           </span>
         </Link>
 
@@ -52,10 +53,10 @@ export function Header() {
                 target={item.external ? "_blank" : undefined}
                 rel={item.external ? "noopener noreferrer" : undefined}
                 className={cn(
-                  "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-150",
                   active
-                    ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300"
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
+                    ? "bg-white/10 text-amber-300"
+                    : "text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.04]"
                 )}
               >
                 {item.label}
@@ -67,17 +68,17 @@ export function Header() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition-colors hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800 md:hidden"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-300 md:hidden"
           aria-label="切换导航菜单"
           aria-expanded={open}
         >
-          {open ? <X size={20} /> : <Menu size={20} />}
+          {open ? <X size={16} /> : <Menu size={16} />}
         </button>
       </div>
 
       {open && (
-        <div className="border-t border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950 md:hidden">
-          <nav className="flex flex-col gap-1">
+        <div className="border-t border-neutral-800/40 bg-[#0a0a0a]/95 px-4 py-3 backdrop-blur-xl md:hidden">
+          <nav className="flex flex-col gap-0.5">
             {NAV.map((item) => {
               const active =
                 !item.external &&
@@ -92,10 +93,10 @@ export function Header() {
                   rel={item.external ? "noopener noreferrer" : undefined}
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "rounded-lg px-3 py-2 text-sm font-medium",
+                    "rounded-md px-3 py-2 text-sm font-medium",
                     active
-                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300"
-                      : "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                      ? "text-amber-300"
+                      : "text-neutral-400 hover:text-neutral-200"
                   )}
                 >
                   {item.label}

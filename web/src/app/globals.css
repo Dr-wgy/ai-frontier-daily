@@ -4,17 +4,12 @@
 @theme {
   --font-sans: var(--font-geist-sans), "PingFang SC", "Microsoft YaHei",
     -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo,
-    monospace;
+  --font-mono: var(--font-geist-mono), "SF Mono", ui-monospace, SFMono-Regular,
+    Menlo, Consolas, monospace;
 }
 
-@variant dark (&:where(.dark, .dark *));
-
+/* ── Dark-first design (helmagent.dev inspired) ── */
 :root {
-  color-scheme: light;
-}
-
-html.dark {
   color-scheme: dark;
 }
 
@@ -24,41 +19,89 @@ body {
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-[#0a0a0a] text-neutral-300 antialiased;
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-html.dark body {
-  @apply bg-slate-950 text-slate-100;
+html.light body {
+  @apply bg-white text-neutral-800;
 }
 
-/* Gradient backdrop used on hero sections */
-.bg-hero-glow {
+/* Subtle ambient glow at top */
+.ambient-glow {
   background-image:
-    radial-gradient(60% 60% at 50% 0%, rgba(59, 130, 246, 0.18) 0%, rgba(59, 130, 246, 0) 100%),
-    radial-gradient(40% 40% at 80% 20%, rgba(139, 92, 246, 0.14) 0%, rgba(139, 92, 246, 0) 100%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% -10%, rgba(6, 182, 212, 0.05) 0%, transparent 60%);
 }
 
-html.dark .bg-hero-glow {
+html.light .ambient-glow {
   background-image:
-    radial-gradient(60% 60% at 50% 0%, rgba(59, 130, 246, 0.22) 0%, rgba(59, 130, 246, 0) 100%),
-    radial-gradient(40% 40% at 80% 20%, rgba(139, 92, 246, 0.18) 0%, rgba(139, 92, 246, 0) 100%);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
 }
 
-/* Anchor scroll offset so sticky nav doesn't cover headings */
+/* Terminal-style block */
+.term-block {
+  @apply rounded-lg border border-neutral-800 bg-neutral-900/60 backdrop-blur-sm;
+}
+
+html.light .term-block {
+  @apply border-neutral-200 bg-neutral-50;
+}
+
+/* Card style */
+.card {
+  @apply rounded-xl border border-neutral-800/60 bg-neutral-900/40 transition-all duration-200;
+}
+.card:hover {
+  @apply border-neutral-700/60 bg-neutral-900/70;
+}
+html.light .card {
+  @apply border-neutral-200 bg-white shadow-sm;
+}
+html.light .card:hover {
+  @apply border-neutral-300 shadow-md;
+}
+
+/* Section anchor offset */
 .section-anchor {
   scroll-margin-top: 9rem;
 }
 
-/* Subtle scrollbar tweaks */
+/* Custom scrollbar */
 *::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
+  height: 6px;
+  width: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: rgb(148 163 184 / 0.4);
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(100 116 139 / 0.6);
+  background-color: rgba(255, 255, 255, 0.2);
+}
+html.light *::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+}
+html.light *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Selection */
+::selection {
+  background-color: rgba(245, 158, 11, 0.25);
+  color: inherit;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus ring */
+*:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.5);
+  outline-offset: 2px;
 }

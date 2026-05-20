@@ -32,34 +32,45 @@ export default function HomePage() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
-        <div className="bg-hero-glow absolute inset-0" aria-hidden="true" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-12 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8">
-          <div className="flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
-            <Sparkles size={16} />
-            <span>今日早报</span>
+      {/* Hero — terminal-style */}
+      <section className="relative overflow-hidden border-b border-neutral-800/40">
+        <div className="ambient-glow absolute inset-0" aria-hidden="true" />
+        <div className="relative mx-auto max-w-5xl px-4 pb-8 pt-10 sm:px-6 sm:pb-10 sm:pt-14">
+          {/* Status line */}
+          <div className="mb-3 flex items-center gap-2 text-[11px] font-mono text-neutral-600">
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>LATEST</span>
+            <span className="text-neutral-700">·</span>
+            <time>{date}</time>
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl lg:text-5xl">
+
+          {/* Title */}
+          <h1 className="text-2xl font-bold tracking-tight text-neutral-100 sm:text-3xl lg:text-4xl">
             {formatChineseDate(date)}
-            <span className="ml-3 text-base font-normal text-slate-500 dark:text-slate-400 sm:text-lg">
+            <span className="ml-2.5 text-sm font-normal text-neutral-500 sm:text-base">
               {weekdayCN(date)}
             </span>
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-600 dark:text-slate-300 sm:text-lg">
-            {header.coverage_line}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-700">
-              共 {briefing.items.length} 条
+
+          {/* Coverage — terminal block style */}
+          <div className="term-block mt-5 overflow-hidden px-4 py-3.5">
+            <p className="text-[13px] leading-relaxed text-neutral-400">
+              {header.coverage_line}
+            </p>
+          </div>
+
+          {/* Meta tags row */}
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-mono text-neutral-600">
+            <span className="rounded-full border border-neutral-800 bg-white/[0.02] px-2.5 py-1">
+              {briefing.items.length} articles
             </span>
             {header.data_sources && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-700">
-                数据源：{header.data_sources}
+              <span className="rounded-full border border-neutral-800 bg-white/[0.02] px-2.5 py-1">
+                {header.data_sources}
               </span>
             )}
             {header.tags_full && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 font-mono text-blue-700 ring-1 ring-blue-200 backdrop-blur dark:bg-slate-900/70 dark:text-blue-300 dark:ring-blue-900">
+              <span className="rounded-full border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-1 text-amber-300/70">
                 {header.tags_full}
               </span>
             )}
@@ -67,10 +78,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <SectionNav items={navItems} />
 
-        <div className="space-y-12 py-8 sm:py-10">
+        <div className="space-y-10 py-7 sm:py-9">
           {SECTION_ORDER.map((key) => {
             const items = grouped[key];
             if (items.length === 0) return null;
@@ -80,19 +91,24 @@ export default function HomePage() {
               <section
                 key={key}
                 id={key}
-                className="section-anchor scroll-mt-32"
+                className="section-anchor"
               >
-                <header className="flex items-baseline justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 sm:text-2xl">
-                    <span className="mr-2 inline-block h-2 w-2 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 align-middle" />
+                {/* Section header */}
+                <header className="flex items-baseline justify-between gap-2 border-b border-neutral-800/30 pb-2.5 mb-5">
+                  <h2 className="flex items-center gap-2.5 text-base font-semibold text-neutral-200 sm:text-lg">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/60"
+                    />
                     {SECTION_LABELS[key]}
                   </h2>
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                    {items.length} 条
+                  <span className="text-xs font-mono tabular-nums text-neutral-600">
+                    {items.length.toString().padStart(2, "0")}
                   </span>
                 </header>
 
-                <div className="mt-5 grid gap-4">
+                {/* Cards */}
+                <div className="space-y-3">
                   {items.map((item, idx) => (
                     <BriefingCard
                       key={`${item.url}-${idx}`}
@@ -102,19 +118,17 @@ export default function HomePage() {
                   ))}
                 </div>
 
+                {/* Footer summary */}
                 {footerLines.length > 0 && (
-                  <aside className="mt-5 rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-                      板块速览
+                  <aside className="mt-4 term-block overflow-hidden px-4 py-3">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-cyan-400/50 mb-2">
+                      // 板块速览
                     </p>
-                    <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                    <ul className="space-y-1.5">
                       {footerLines.map((line, i) => (
-                        <li key={i} className="flex gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="mt-2 inline-block h-1 w-1 shrink-0 rounded-full bg-blue-500"
-                          />
-                          <span className="leading-relaxed">{line}</span>
+                        <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-neutral-500">
+                          <span aria-hidden="true" className="mt-1.5 shrink-0 text-amber-400/30">→</span>
+                          <span>{line}</span>
                         </li>
                       ))}
                     </ul>
@@ -125,13 +139,14 @@ export default function HomePage() {
           })}
         </div>
 
-        <div className="border-t border-slate-200 py-10 text-center dark:border-slate-800">
+        {/* Archive CTA */}
+        <div className="border-t border-neutral-800/30 py-10 text-center">
           <Link
             href="/archive"
-            className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-blue-700 hover:shadow-md"
+            className="inline-flex items-center gap-2 rounded-lg border border-neutral-800 bg-white/[0.03] px-5 py-2.5 text-[13px] font-medium text-neutral-300 transition-all hover:border-amber-400/25 hover:bg-amber-4/5 hover:text-amber-300"
           >
             查看往期归档
-            <ArrowRight size={16} />
+            <ArrowRight size={14} />
           </Link>
         </div>
       </div>

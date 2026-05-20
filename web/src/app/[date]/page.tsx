@@ -61,40 +61,48 @@ export default async function DatePage({ params }: DatePageProps) {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-slate-200 dark:border-slate-800">
-        <div className="bg-hero-glow absolute inset-0" aria-hidden="true" />
-        <div className="relative mx-auto max-w-6xl px-4 pb-10 pt-10 sm:px-6 sm:pb-12 sm:pt-14 lg:px-8">
+      <section className="relative overflow-hidden border-b border-neutral-800/40">
+        <div className="ambient-glow absolute inset-0" aria-hidden="true" />
+        <div className="relative mx-auto max-w-5xl px-4 pb-8 pt-8 sm:px-6 sm:pb-10 sm:pt-12">
           <Link
             href="/archive"
-            className="inline-flex items-center gap-1 text-sm text-slate-600 transition-colors hover:text-blue-700 dark:text-slate-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-1.5 text-[12px] text-neutral-600 transition-colors hover:text-neutral-300"
           >
-            <ArrowLeft size={14} />
+            <ArrowLeft size={13} />
             返回归档
           </Link>
-          <div className="mt-4 flex items-center gap-2 text-sm font-medium text-blue-700 dark:text-blue-300">
-            <CalendarDays size={16} />
-            <span>每日 AI 早报</span>
+
+          <div className="mt-3 flex items-center gap-2 text-[11px] font-mono text-neutral-600">
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+            <span>DAILY</span>
+            <span className="text-neutral-700">·</span>
+            <time>{date}</time>
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-4xl">
+
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-neutral-100 sm:text-3xl">
             {formatChineseDate(date)}
-            <span className="ml-3 text-base font-normal text-slate-500 dark:text-slate-400 sm:text-lg">
+            <span className="ml-2.5 text-sm font-normal text-neutral-500 sm:text-base">
               {weekdayCN(date)}
             </span>
           </h1>
-          <p className="mt-4 max-w-3xl text-base leading-relaxed text-slate-600 dark:text-slate-300 sm:text-lg">
-            {header.coverage_line}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-700">
-              共 {briefing.items.length} 条
+
+          <div className="term-block mt-5 overflow-hidden px-4 py-3.5">
+            <p className="text-[13px] leading-relaxed text-neutral-400">
+              {header.coverage_line}
+            </p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-mono text-neutral-600">
+            <span className="rounded-full border border-neutral-800 bg-white/[0.02] px-2.5 py-1">
+              {briefing.items.length} articles
             </span>
             {header.data_sources && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 ring-1 ring-slate-200 backdrop-blur dark:bg-slate-900/70 dark:ring-slate-700">
-                数据源：{header.data_sources}
+              <span className="rounded-full border border-neutral-800 bg-white/[0.02] px-2.5 py-1">
+                {header.data_sources}
               </span>
             )}
             {header.tags_full && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 font-mono text-blue-700 ring-1 ring-blue-200 backdrop-blur dark:bg-slate-900/70 dark:text-blue-300 dark:ring-blue-900">
+              <span className="rounded-full border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-1 text-amber-300/70">
                 {header.tags_full}
               </span>
             )}
@@ -102,10 +110,10 @@ export default async function DatePage({ params }: DatePageProps) {
         </div>
       </section>
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <SectionNav items={navItems} />
 
-        <div className="space-y-12 py-8 sm:py-10">
+        <div className="space-y-10 py-7 sm:py-9">
           {SECTION_ORDER.map((key) => {
             const items = grouped[key];
             if (items.length === 0) return null;
@@ -115,19 +123,22 @@ export default async function DatePage({ params }: DatePageProps) {
               <section
                 key={key}
                 id={key}
-                className="section-anchor scroll-mt-32"
+                className="section-anchor"
               >
-                <header className="flex items-baseline justify-between gap-2 border-b border-slate-200 pb-3 dark:border-slate-800">
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 sm:text-2xl">
-                    <span className="mr-2 inline-block h-2 w-2 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 align-middle" />
+                <header className="flex items-baseline justify-between gap-2 border-b border-neutral-800/30 pb-2.5 mb-5">
+                  <h2 className="flex items-center gap-2.5 text-base font-semibold text-neutral-200 sm:text-lg">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/60"
+                    />
                     {SECTION_LABELS[key]}
                   </h2>
-                  <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-                    {items.length} 条
+                  <span className="text-xs font-mono tabular-nums text-neutral-600">
+                    {items.length.toString().padStart(2, "0")}
                   </span>
                 </header>
 
-                <div className="mt-5 grid gap-4">
+                <div className="space-y-3">
                   {items.map((item, idx) => (
                     <BriefingCard
                       key={`${item.url}-${idx}`}
@@ -138,18 +149,15 @@ export default async function DatePage({ params }: DatePageProps) {
                 </div>
 
                 {footerLines.length > 0 && (
-                  <aside className="mt-5 rounded-xl border border-blue-100 bg-blue-50/60 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-                      板块速览
+                  <aside className="mt-4 term-block overflow-hidden px-4 py-3">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-cyan-400/50 mb-2">
+                      // 板块速览
                     </p>
-                    <ul className="mt-2 space-y-1 text-sm text-slate-700 dark:text-slate-200">
+                    <ul className="space-y-1.5">
                       {footerLines.map((line, i) => (
-                        <li key={i} className="flex gap-2">
-                          <span
-                            aria-hidden="true"
-                            className="mt-2 inline-block h-1 w-1 shrink-0 rounded-full bg-blue-500"
-                          />
-                          <span className="leading-relaxed">{line}</span>
+                        <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-neutral-500">
+                          <span aria-hidden="true" className="mt-1.5 shrink-0 text-amber-400/30">→</span>
+                          <span>{line}</span>
                         </li>
                       ))}
                     </ul>
@@ -161,21 +169,19 @@ export default async function DatePage({ params }: DatePageProps) {
         </div>
 
         {/* Prev / Next nav */}
-        <nav className="grid gap-3 border-t border-slate-200 py-10 dark:border-slate-800 sm:grid-cols-2">
+        <nav className="grid gap-3 border-t border-neutral-800/30 py-8 sm:grid-cols-2">
           {olderDate ? (
             <Link
               href={`/${olderDate}`}
-              className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 transition-all hover:border-blue-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
+              className="card group flex items-center gap-3 p-4"
             >
               <ArrowLeft
-                size={18}
-                className="shrink-0 text-slate-400 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                size={16}
+                className="shrink-0 text-neutral-700 transition-colors group-hover:text-amber-400/60"
               />
               <div className="min-w-0">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  上一期
-                </p>
-                <p className="truncate text-sm font-medium text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-neutral-700">prev</p>
+                <p className="truncate text-[13px] font-medium text-neutral-300 group-hover:text-amber-300/90">
                   {formatChineseDate(olderDate)}
                 </p>
               </div>
@@ -186,19 +192,17 @@ export default async function DatePage({ params }: DatePageProps) {
           {newerDate ? (
             <Link
               href={`/${newerDate}`}
-              className="group flex items-center justify-end gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-right transition-all hover:border-blue-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
+              className="card group flex items-center justify-end gap-3 p-4 text-right"
             >
               <div className="min-w-0">
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  下一期
-                </p>
-                <p className="truncate text-sm font-medium text-slate-900 group-hover:text-blue-700 dark:text-slate-100 dark:group-hover:text-blue-300">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-neutral-700">next</p>
+                <p className="truncate text-[13px] font-medium text-neutral-300 group-hover:text-amber-300/90">
                   {formatChineseDate(newerDate)}
                 </p>
               </div>
               <ArrowRight
-                size={18}
-                className="shrink-0 text-slate-400 transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400"
+                size={16}
+                className="shrink-0 text-neutral-700 transition-colors group-hover:text-amber-400/60"
               />
             </Link>
           ) : (

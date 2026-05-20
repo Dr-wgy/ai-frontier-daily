@@ -44,14 +44,14 @@ export function SectionNav({ items }: SectionNavProps) {
     }
     const el = document.getElementById(key);
     if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 80;
+      const top = el.getBoundingClientRect().top + window.scrollY - 72;
       window.scrollTo({ top, behavior: "smooth" });
     }
   };
 
   return (
-    <div className="sticky top-16 z-30 -mx-4 border-b border-slate-200 bg-white/85 px-4 py-3 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/85 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-      <div className="mx-auto flex max-w-6xl gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="sticky top-14 z-30 -mx-4 border-b border-neutral-800/40 bg-[#0a0a0a]/90 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6">
+      <div className="mx-auto flex max-w-5xl gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item) => {
           const isActive = active === item.key;
           const label =
@@ -62,19 +62,19 @@ export function SectionNav({ items }: SectionNavProps) {
               type="button"
               onClick={() => handleClick(item.key)}
               className={cn(
-                "flex shrink-0 items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-all",
+                "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1 text-[12px] font-medium transition-all duration-150",
                 isActive
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                  ? "bg-amber-400/15 text-amber-300"
+                  : "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04]"
               )}
             >
               {label}
               <span
                 className={cn(
-                  "rounded-full px-1.5 text-xs tabular-nums",
+                  "rounded px-1 text-[10px] font-mono tabular-nums",
                   isActive
-                    ? "bg-white/20 text-white"
-                    : "bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400"
+                    ? "bg-amber-400/20 text-amber-300"
+                    : "bg-white/[0.04] text-neutral-600"
                 )}
               >
                 {item.count}
