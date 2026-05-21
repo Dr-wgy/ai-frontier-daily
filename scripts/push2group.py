@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import ssl
 import subprocess
 import sys
 import urllib.error
@@ -57,7 +58,7 @@ class PushConfig:
     doc_url: str
     summary_path: Path
     protocols: Any
-    webhook: str | None
+    webhook: list[str] | None
     chat_id: str | None
     use_lark_cli: bool
 
@@ -209,17 +210,28 @@ class FeishuBotPusher:
     # -------------------------------------------------------------------------
 
     def _send_webhook(self, payload: dict) -> dict:
-        """发送 webhook 请求"""
+        """发送 webhook 请求（支持多个 webhook）"""
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-        req = urllib.request.Request(
-            self.cfg.webhook,
-            data=body,
-            headers={'Content-Type': 'application/json; charset=utf-8'},
-            method='POST',
-        )
-        with urllib.request.urlopen(req, timeout=30.0) as resp:
-            raw = resp.read().decode('utf-8')
-            return json.loads(raw) if raw.strip() else {}
+        results = []
+        
+        # 创建不验证 SSL 证书的上下文（解决自签名证书问题）
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
+        for webhook_url in self.cfg.webhook:
+            req = urllib.request.Request(
+                webhook_url,
+                data=body,
+                headers={'Content-Type': 'application/json; charset=utf-8'},
+                method='POST',
+            )
+            with urllib.request.urlopen(req, context=ssl_context, timeout=30.0) as resp:
+                raw = resp.read().decode('utf-8')
+                results.append(json.loads(raw) if raw.strip() else {})
+        
+        # 返回最后一个成功的响应，或合并所有响应
+        return results[-1] if results else {}
 
     def _send_via_lark_cli(self, payload: dict) -> dict:
         """使用 lark-cli 发送交互式卡片"""
