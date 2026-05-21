@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import ssl
 import subprocess
 import sys
 import urllib.error
@@ -57,7 +58,7 @@ class PushConfig:
     doc_url: str
     summary_path: Path
     protocols: Any
-    webhook: str | None
+    webhook: list[str] | None
     chat_id: str | None
     use_lark_cli: bool
 
@@ -209,17 +210,28 @@ class FeishuBotPusher:
     # -------------------------------------------------------------------------
 
     def _send_webhook(self, payload: dict) -> dict:
-        """发送 webhook 请求"""
+        """发送 webhook 请求（支持多个 webhook）"""
         body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
-        req = urllib.request.Request(
-            self.cfg.webhook,
-            data=body,
-            headers={'Content-Type': 'application/json; charset=utf-8'},
-            method='POST',
-        )
-        with urllib.request.urlopen(req, timeout=30.0) as resp:
-            raw = resp.read().decode('utf-8')
-            return json.loads(raw) if raw.strip() else {}
+        results = []
+        
+        # 创建不验证 SSL 证书的上下文（解决自签名证书问题）
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        
+        for webhook_url in self.cfg.webhook:
+            req = urllib.request.Request(
+                webhook_url,
+                data=body,
+                headers={'Content-Type': 'application/json; charset=utf-8'},
+                method='POST',
+            )
+            with urllib.request.urlopen(req, context=ssl_context, timeout=30.0) as resp:
+                raw = resp.read().decode('utf-8')
+                results.append(json.loads(raw) if raw.strip() else {})
+        
+        # 返回最后一个成功的响应，或合并所有响应
+        return results[-1] if results else {}
 
     def _send_via_lark_cli(self, payload: dict) -> dict:
         """使用 lark-cli 发送交互式卡片"""
@@ -268,7 +280,7 @@ class ConfigFactory:
         date = args.date
         app_config = AppConfig(date_str=date)
 
-        webhook = cls._load_webhook_from_secrets(app_config) if not args.use_lark_cli else None
+        webhook = cls._load_webhooks_from_secrets(app_config) if not args.use_lark_cli else None
         chat_id = args.chat_id or cls._load_chat_id_from_secrets(app_config) if args.use_lark_cli else None
         summary_path = cls._resolve_summary_path(app_config, args.summary_json)
 
@@ -283,13 +295,38 @@ class ConfigFactory:
         )
 
     @staticmethod
-    def _load_webhook_from_secrets(app_config: AppConfig) -> str:
-        """从 secrets.json 加载 webhook"""
+    def _load_webhooks_from_secrets(app_config: AppConfig) -> list[str]:
+        """从 secrets.json 加载 webhooks（兼容新旧配置并去重）"""
         feishu_cfg = app_config._feishu_config
-        webhook = feishu_cfg.get('bot_webhook', '').strip()
-        if not webhook:
-            raise ValueError('config/secrets.json 缺少 feishu.bot_webhook 配置')
-        return webhook
+        
+        # 收集所有 webhook
+        all_webhooks = []
+        
+        # 读取旧配置（字符串形式）
+        old_webhook = feishu_cfg.get('bot_webhook', '').strip()
+        if old_webhook:
+            all_webhooks.append(old_webhook)
+        
+        # 读取新配置（数组形式）
+        new_webhooks = feishu_cfg.get('bot_webhooks', [])
+        if isinstance(new_webhooks, list):
+            for w in new_webhooks:
+                w_stripped = w.strip()
+                if w_stripped:
+                    all_webhooks.append(w_stripped)
+        
+        # 去重处理（保持顺序）
+        seen = set()
+        result = []
+        for w in all_webhooks:
+            if w not in seen:
+                seen.add(w)
+                result.append(w)
+        
+        if not result:
+            raise ValueError('config/secrets.json 缺少 feishu.bot_webhooks 或 feishu.bot_webhook 配置')
+        
+        return result
 
     @staticmethod
     def _load_chat_id_from_secrets(app_config: AppConfig) -> str | None:
