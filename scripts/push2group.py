@@ -283,13 +283,38 @@ class ConfigFactory:
         )
 
     @staticmethod
-    def _load_webhook_from_secrets(app_config: AppConfig) -> str:
-        """从 secrets.json 加载 webhook"""
+    def _load_webhooks_from_secrets(app_config: AppConfig) -> list[str]:
+        """从 secrets.json 加载 webhooks（兼容新旧配置并去重）"""
         feishu_cfg = app_config._feishu_config
-        webhook = feishu_cfg.get('bot_webhook', '').strip()
-        if not webhook:
-            raise ValueError('config/secrets.json 缺少 feishu.bot_webhook 配置')
-        return webhook
+        
+        # 收集所有 webhook
+        all_webhooks = []
+        
+        # 读取旧配置（字符串形式）
+        old_webhook = feishu_cfg.get('bot_webhook', '').strip()
+        if old_webhook:
+            all_webhooks.append(old_webhook)
+        
+        # 读取新配置（数组形式）
+        new_webhooks = feishu_cfg.get('bot_webhooks', [])
+        if isinstance(new_webhooks, list):
+            for w in new_webhooks:
+                w_stripped = w.strip()
+                if w_stripped:
+                    all_webhooks.append(w_stripped)
+        
+        # 去重处理（保持顺序）
+        seen = set()
+        result = []
+        for w in all_webhooks:
+            if w not in seen:
+                seen.add(w)
+                result.append(w)
+        
+        if not result:
+            raise ValueError('config/secrets.json 缺少 feishu.bot_webhooks 或 feishu.bot_webhook 配置')
+        
+        return result
 
     @staticmethod
     def _load_chat_id_from_secrets(app_config: AppConfig) -> str | None:
