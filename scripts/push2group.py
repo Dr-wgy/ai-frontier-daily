@@ -268,7 +268,7 @@ class ConfigFactory:
         date = args.date
         app_config = AppConfig(date_str=date)
 
-        webhook = cls._load_webhook_from_secrets(app_config) if not args.use_lark_cli else None
+        webhook = cls._load_webhooks_from_secrets(app_config) if not args.use_lark_cli else None
         chat_id = args.chat_id or cls._load_chat_id_from_secrets(app_config) if args.use_lark_cli else None
         summary_path = cls._resolve_summary_path(app_config, args.summary_json)
 
