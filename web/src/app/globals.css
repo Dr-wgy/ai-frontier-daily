@@ -1,16 +1,75 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/* Re-bind Tailwind's `dark:` variant to the `.dark` class so it aligns with
+ * next-themes (attribute="class"). Default in v4 is prefers-color-scheme,
+ * which would ignore the user's explicit choice. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-geist-sans), "PingFang SC", "Microsoft YaHei",
     -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), "SF Mono", ui-monospace, SFMono-Regular,
     Menlo, Consolas, monospace;
+
+  /* Semantic color tokens — light defaults; overridden by :root.dark below */
+  --color-surface: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-subtle: #fafafa;
+  --color-surface-faint: #f5f5f5;
+
+  --color-ink: #171717;
+  --color-ink-muted: #525252;
+  --color-ink-subtle: #737373;
+  --color-ink-faint: #a3a3a3;
+
+  --color-line: #e5e5e5;
+  --color-line-subtle: #ededed;
+  --color-line-faint: #f3f3f3;
 }
 
-/* ── Dark-first design (helmagent.dev inspired) ── */
+/* ── Theme overrides ──
+ * next-themes writes class="light|dark" on <html> via an inline <head> script
+ * that runs before first paint, so tokens are correct from frame one (no FOUC).
+ * No `color-scheme` here — enableColorScheme on ThemeProvider sets it inline.
+ */
+:root.dark {
+  --color-surface: #0a0a0a;
+  --color-surface-elevated: #161616;
+  --color-surface-subtle: #181818;
+  --color-surface-faint: #141414;
+
+  --color-ink: #f5f5f5;
+  --color-ink-muted: #d4d4d4;
+  --color-ink-subtle: #737373;
+  --color-ink-faint: #404040;
+
+  --color-line: #262626;
+  --color-line-subtle: #1f1f1f;
+  --color-line-faint: #161616;
+}
+
+/* Theme-dependent design assets */
 :root {
-  color-scheme: dark;
+  --ambient-glow: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    rgba(245, 158, 11, 0.06) 0%,
+    transparent 70%
+  );
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04);
+  --shadow-card-hover: 0 4px 14px rgb(0 0 0 / 0.06);
+}
+
+:root.dark {
+  --ambient-glow:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 40% at 85% -10%, rgba(6, 182, 212, 0.05) 0%, transparent 60%);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+  --shadow-card: none;
+  --shadow-card-hover: none;
 }
 
 html,
@@ -19,55 +78,41 @@ body {
 }
 
 body {
-  @apply bg-[#0a0a0a] text-neutral-300 antialiased;
+  background-color: var(--color-surface);
+  color: var(--color-ink-muted);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-html.light body {
-  @apply bg-white text-neutral-800;
-}
-
-/* Subtle ambient glow at top */
 .ambient-glow {
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.08) 0%, transparent 70%),
-    radial-gradient(ellipse 60% 40% at 85% -10%, rgba(6, 182, 212, 0.05) 0%, transparent 60%);
+  background-image: var(--ambient-glow);
 }
 
-html.light .ambient-glow {
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.06) 0%, transparent 70%);
-}
-
-/* Terminal-style block */
 .term-block {
-  @apply rounded-lg border border-neutral-800 bg-neutral-900/60 backdrop-blur-sm;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-line);
+  background-color: var(--color-surface-subtle);
+  backdrop-filter: blur(4px);
 }
 
-html.light .term-block {
-  @apply border-neutral-200 bg-neutral-50;
-}
-
-/* Card style */
 .card {
-  @apply rounded-xl border border-neutral-800/60 bg-neutral-900/40 transition-all duration-200;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line-subtle);
+  background-color: var(--color-surface-elevated);
+  box-shadow: var(--shadow-card);
+  transition: border-color 200ms, background-color 200ms, box-shadow 200ms;
 }
 .card:hover {
-  @apply border-neutral-700/60 bg-neutral-900/70;
-}
-html.light .card {
-  @apply border-neutral-200 bg-white shadow-sm;
-}
-html.light .card:hover {
-  @apply border-neutral-300 shadow-md;
+  border-color: var(--color-line);
+  background-color: var(--color-surface-elevated);
+  box-shadow: var(--shadow-card-hover);
 }
 
-/* Section anchor offset */
 .section-anchor {
   scroll-margin-top: 9rem;
 }
 
-/* Custom scrollbar */
 *::-webkit-scrollbar {
   height: 6px;
   width: 6px;
@@ -76,32 +121,56 @@ html.light .card:hover {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--scrollbar-thumb);
   border-radius: 9999px;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-html.light *::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.15);
-}
-html.light *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(0, 0, 0, 0.25);
+  background-color: var(--scrollbar-thumb-hover);
 }
 
-/* Selection */
 ::selection {
   background-color: rgba(245, 158, 11, 0.25);
   color: inherit;
 }
 
-/* Smooth scroll */
 html {
   scroll-behavior: smooth;
 }
 
-/* Focus ring */
 *:focus-visible {
   outline: 2px solid rgba(245, 158, 11, 0.5);
   outline-offset: 2px;
+}
+
+/* ── Theme switch reveal ──
+ * Uses the View Transitions API. The incoming root is clipped to a circle
+ * that expands from (--theme-x, --theme-y) — the toggle button's center.
+ * Falls back gracefully on browsers without VT support (instant switch).
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--theme-x, 100%) var(--theme-y, 0));
+  }
+  to {
+    clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 100%) var(--theme-y, 0));
+  }
+}
+::view-transition-new(root) {
+  animation: theme-reveal 450ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }

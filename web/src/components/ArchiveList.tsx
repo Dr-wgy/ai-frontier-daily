@@ -10,7 +10,7 @@ interface ArchiveListProps {
 export function ArchiveList({ summaries }: ArchiveListProps) {
   if (summaries.length === 0) {
     return (
-      <div className="term-block p-12 text-center text-neutral-600">
+      <div className="term-block p-12 text-center text-ink-subtle">
         暂无往期早报。
       </div>
     );
@@ -28,23 +28,23 @@ export function ArchiveList({ summaries }: ArchiveListProps) {
               <div className="flex items-start gap-3">
                 <span
                   aria-hidden="true"
-                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-neutral-800 bg-neutral-900/60"
+                  className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-subtle"
                 >
-                  <CalendarDays size={15} className="text-neutral-600" />
+                  <CalendarDays size={15} className="text-ink-subtle" />
                 </span>
                 <div>
-                  <h2 className="text-[14px] font-semibold text-neutral-200 transition-colors group-hover:text-amber-300/90 sm:text-base">
+                  <h2 className="text-[14px] font-semibold text-ink transition-colors group-hover:text-amber-700 dark:group-hover:text-amber-300/90 sm:text-base">
                     {formatChineseDate(summary.date)}
-                    <span className="ml-2 text-xs font-normal text-neutral-500 sm:text-sm">
+                    <span className="ml-2 text-xs font-normal text-ink-subtle sm:text-sm">
                       {weekdayCN(summary.date)}
                     </span>
                   </h2>
-                  <p className="mt-1 line-clamp-1 text-[12px] text-neutral-600">
+                  <p className="mt-1 line-clamp-1 text-[12px] text-ink-subtle">
                     {summary.coverage_line}
                   </p>
                 </div>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-800 bg-white/[0.02] px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-colors group-hover:border-amber-400/20 group-hover:text-amber-300/70">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-ink/[0.02] px-2.5 py-1 text-[11px] font-medium text-ink-muted transition-colors group-hover:border-amber-500/40 group-hover:text-amber-700 dark:group-hover:border-amber-400/20 dark:group-hover:text-amber-300/70">
                 {summary.total} 条
                 <ArrowRight
                   size={12}
@@ -61,7 +61,7 @@ export function ArchiveList({ summaries }: ArchiveListProps) {
                 return (
                   <span
                     key={key}
-                    className="rounded-full border border-neutral-800/80 bg-neutral-900/40 px-2 py-px text-[10px] text-neutral-600"
+                    className="rounded-full border border-line-subtle bg-surface-elevated px-2 py-px text-[10px] text-ink-subtle"
                   >
                     {SECTION_LABELS[key]}{" "}
                     <span className="font-mono tabular-nums">{count}</span>
@@ -71,7 +71,7 @@ export function ArchiveList({ summaries }: ArchiveListProps) {
             </div>
 
             {summary.data_sources && (
-              <p className="mt-2 pl-12 text-[10px] font-mono text-neutral-700">
+              <p className="mt-2 pl-12 text-[10px] font-mono text-ink-faint">
                 src: {summary.data_sources}
               </p>
             )}

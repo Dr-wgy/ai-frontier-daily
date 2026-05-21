@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV = [
   { href: "/", label: "今日早报" },
@@ -21,11 +22,11 @@ export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-neutral-800/60 bg-[#0a0a0a]/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-line-subtle bg-surface/95 backdrop-blur-xl">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
         <Link
           href="/"
-          className="group flex items-center gap-2.5 text-sm font-semibold tracking-tight text-neutral-200"
+          className="group flex items-center gap-2.5 text-sm font-semibold tracking-tight text-ink"
         >
           {/* Logo dot */}
           <span
@@ -39,45 +40,49 @@ export function Header() {
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
-          {NAV.map((item) => {
-            const active =
-              !item.external &&
-              (item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                target={item.external ? "_blank" : undefined}
-                rel={item.external ? "noopener noreferrer" : undefined}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-150",
-                  active
-                    ? "bg-white/10 text-amber-300"
-                    : "text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.04]"
-                )}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex items-center gap-1">
+          <nav className="hidden items-center gap-1 md:flex">
+            {NAV.map((item) => {
+              const active =
+                !item.external &&
+                (item.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(item.href));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  target={item.external ? "_blank" : undefined}
+                  rel={item.external ? "noopener noreferrer" : undefined}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-xs font-medium transition-all duration-150",
+                    active
+                      ? "bg-ink/10 text-amber-300"
+                      : "text-ink-subtle hover:text-ink hover:bg-ink/[0.04]"
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-300 md:hidden"
-          aria-label="切换导航菜单"
-          aria-expanded={open}
-        >
-          {open ? <X size={16} /> : <Menu size={16} />}
-        </button>
+          <ThemeToggle />
+
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ink-subtle transition-colors hover:bg-ink/[0.06] hover:text-ink-muted md:hidden"
+            aria-label="切换导航菜单"
+            aria-expanded={open}
+          >
+            {open ? <X size={16} /> : <Menu size={16} />}
+          </button>
+        </div>
       </div>
 
       {open && (
-        <div className="border-t border-neutral-800/40 bg-[#0a0a0a]/95 px-4 py-3 backdrop-blur-xl md:hidden">
+        <div className="border-t border-line-subtle bg-surface/95 px-4 py-3 backdrop-blur-xl md:hidden">
           <nav className="flex flex-col gap-0.5">
             {NAV.map((item) => {
               const active =
@@ -96,7 +101,7 @@ export function Header() {
                     "rounded-md px-3 py-2 text-sm font-medium",
                     active
                       ? "text-amber-300"
-                      : "text-neutral-400 hover:text-neutral-200"
+                      : "text-ink-muted hover:text-ink"
                   )}
                 >
                   {item.label}

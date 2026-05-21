@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { ArrowLeft, ArrowRight, CalendarDays } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { BriefingCard } from "@/components/BriefingCard";
 import { SectionNav, type SectionNavItem } from "@/components/SectionNav";
 import {
@@ -61,48 +61,48 @@ export default async function DatePage({ params }: DatePageProps) {
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-neutral-800/40">
+      <section className="relative overflow-hidden border-b border-line-subtle">
         <div className="ambient-glow absolute inset-0" aria-hidden="true" />
         <div className="relative mx-auto max-w-5xl px-4 pb-8 pt-8 sm:px-6 sm:pb-10 sm:pt-12">
           <Link
             href="/archive"
-            className="inline-flex items-center gap-1.5 text-[12px] text-neutral-600 transition-colors hover:text-neutral-300"
+            className="inline-flex items-center gap-1.5 text-[12px] text-ink-subtle transition-colors hover:text-ink-muted"
           >
             <ArrowLeft size={13} />
             返回归档
           </Link>
 
-          <div className="mt-3 flex items-center gap-2 text-[11px] font-mono text-neutral-600">
-            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+          <div className="mt-3 flex items-center gap-2 text-[11px] font-mono text-ink-subtle">
+            <span className="inline-flex h-1.5 w-1.5 rounded-full bg-cyan-500 dark:bg-cyan-400" />
             <span>DAILY</span>
-            <span className="text-neutral-700">·</span>
+            <span className="text-ink-faint">·</span>
             <time>{date}</time>
           </div>
 
-          <h1 className="mt-2 text-2xl font-bold tracking-tight text-neutral-100 sm:text-3xl">
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             {formatChineseDate(date)}
-            <span className="ml-2.5 text-sm font-normal text-neutral-500 sm:text-base">
+            <span className="ml-2.5 text-sm font-normal text-ink-subtle sm:text-base">
               {weekdayCN(date)}
             </span>
           </h1>
 
           <div className="term-block mt-5 overflow-hidden px-4 py-3.5">
-            <p className="text-[13px] leading-relaxed text-neutral-400">
+            <p className="text-[13px] leading-relaxed text-ink-muted">
               {header.coverage_line}
             </p>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-mono text-neutral-600">
-            <span className="rounded-full border border-neutral-800 bg-white/[0.02] px-2.5 py-1">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-[11px] font-mono text-ink-subtle">
+            <span className="rounded-full border border-line bg-ink/[0.02] px-2.5 py-1">
               {briefing.items.length} articles
             </span>
             {header.data_sources && (
-              <span className="rounded-full border border-neutral-800 bg-white/[0.02] px-2.5 py-1">
+              <span className="rounded-full border border-line bg-ink/[0.02] px-2.5 py-1">
                 {header.data_sources}
               </span>
             )}
             {header.tags_full && (
-              <span className="rounded-full border border-amber-400/20 bg-amber-400/[0.06] px-2.5 py-1 text-amber-300/70">
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/[0.08] px-2.5 py-1 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/[0.06] dark:text-amber-300/70">
                 {header.tags_full}
               </span>
             )}
@@ -110,9 +110,9 @@ export default async function DatePage({ params }: DatePageProps) {
         </div>
       </section>
 
-      <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        <SectionNav items={navItems} />
+      <SectionNav items={navItems} />
 
+      <div className="mx-auto max-w-5xl px-4 sm:px-6">
         <div className="space-y-10 py-7 sm:py-9">
           {SECTION_ORDER.map((key) => {
             const items = grouped[key];
@@ -125,15 +125,15 @@ export default async function DatePage({ params }: DatePageProps) {
                 id={key}
                 className="section-anchor"
               >
-                <header className="flex items-baseline justify-between gap-2 border-b border-neutral-800/30 pb-2.5 mb-5">
-                  <h2 className="flex items-center gap-2.5 text-base font-semibold text-neutral-200 sm:text-lg">
+                <header className="flex items-baseline justify-between gap-2 border-b border-line-faint pb-2.5 mb-5">
+                  <h2 className="flex items-center gap-2.5 text-base font-semibold text-ink sm:text-lg">
                     <span
                       aria-hidden="true"
-                      className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400/60"
+                      className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-400/60"
                     />
                     {SECTION_LABELS[key]}
                   </h2>
-                  <span className="text-xs font-mono tabular-nums text-neutral-600">
+                  <span className="text-xs font-mono tabular-nums text-ink-subtle">
                     {items.length.toString().padStart(2, "0")}
                   </span>
                 </header>
@@ -150,13 +150,13 @@ export default async function DatePage({ params }: DatePageProps) {
 
                 {footerLines.length > 0 && (
                   <aside className="mt-4 term-block overflow-hidden px-4 py-3">
-                    <p className="text-[10px] font-mono uppercase tracking-widest text-cyan-400/50 mb-2">
-                      // 板块速览
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-cyan-600 dark:text-cyan-400/50 mb-2">
+                      {"// 板块速览"}
                     </p>
                     <ul className="space-y-1.5">
                       {footerLines.map((line, i) => (
-                        <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-neutral-500">
-                          <span aria-hidden="true" className="mt-1.5 shrink-0 text-amber-400/30">→</span>
+                        <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-ink-subtle">
+                          <span aria-hidden="true" className="mt-1.5 shrink-0 text-amber-500/60 dark:text-amber-400/30">→</span>
                           <span>{line}</span>
                         </li>
                       ))}
@@ -169,7 +169,7 @@ export default async function DatePage({ params }: DatePageProps) {
         </div>
 
         {/* Prev / Next nav */}
-        <nav className="grid gap-3 border-t border-neutral-800/30 py-8 sm:grid-cols-2">
+        <nav className="grid gap-3 border-t border-line-faint py-8 sm:grid-cols-2">
           {olderDate ? (
             <Link
               href={`/${olderDate}`}
@@ -177,11 +177,11 @@ export default async function DatePage({ params }: DatePageProps) {
             >
               <ArrowLeft
                 size={16}
-                className="shrink-0 text-neutral-700 transition-colors group-hover:text-amber-400/60"
+                className="shrink-0 text-ink-faint transition-colors group-hover:text-amber-500 dark:group-hover:text-amber-400/60"
               />
               <div className="min-w-0">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-neutral-700">prev</p>
-                <p className="truncate text-[13px] font-medium text-neutral-300 group-hover:text-amber-300/90">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-ink-faint">prev</p>
+                <p className="truncate text-[13px] font-medium text-ink-muted group-hover:text-amber-700 dark:group-hover:text-amber-300/90">
                   {formatChineseDate(olderDate)}
                 </p>
               </div>
@@ -195,14 +195,14 @@ export default async function DatePage({ params }: DatePageProps) {
               className="card group flex items-center justify-end gap-3 p-4 text-right"
             >
               <div className="min-w-0">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-neutral-700">next</p>
-                <p className="truncate text-[13px] font-medium text-neutral-300 group-hover:text-amber-300/90">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-ink-faint">next</p>
+                <p className="truncate text-[13px] font-medium text-ink-muted group-hover:text-amber-700 dark:group-hover:text-amber-300/90">
                   {formatChineseDate(newerDate)}
                 </p>
               </div>
               <ArrowRight
                 size={16}
-                className="shrink-0 text-neutral-700 transition-colors group-hover:text-amber-400/60"
+                className="shrink-0 text-ink-faint transition-colors group-hover:text-amber-500 dark:group-hover:text-amber-400/60"
               />
             </Link>
           ) : (

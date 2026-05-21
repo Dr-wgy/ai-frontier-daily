@@ -44,14 +44,14 @@ export function SectionNav({ items }: SectionNavProps) {
     }
     const el = document.getElementById(key);
     if (el) {
-      const top = el.getBoundingClientRect().top + window.scrollY - 72;
+      const top = el.getBoundingClientRect().top + window.scrollY - 96;
       window.scrollTo({ top, behavior: "smooth" });
     }
   };
 
   return (
-    <div className="sticky top-14 z-30 -mx-4 border-b border-neutral-800/40 bg-[#0a0a0a]/90 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6">
-      <div className="mx-auto flex max-w-5xl gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="sticky top-14 z-30 border-b border-line-subtle bg-surface/95 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-5xl items-center gap-1.5 overflow-x-auto px-4 py-2.5 sm:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {items.map((item) => {
           const isActive = active === item.key;
           const label =
@@ -64,8 +64,8 @@ export function SectionNav({ items }: SectionNavProps) {
               className={cn(
                 "flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1 text-[12px] font-medium transition-all duration-150",
                 isActive
-                  ? "bg-amber-400/15 text-amber-300"
-                  : "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04]"
+                  ? "bg-amber-500/15 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300"
+                  : "text-ink-subtle hover:text-ink-muted hover:bg-ink/[0.04]"
               )}
             >
               {label}
@@ -73,8 +73,8 @@ export function SectionNav({ items }: SectionNavProps) {
                 className={cn(
                   "rounded px-1 text-[10px] font-mono tabular-nums",
                   isActive
-                    ? "bg-amber-400/20 text-amber-300"
-                    : "bg-white/[0.04] text-neutral-600"
+                    ? "bg-amber-500/20 text-amber-700 dark:bg-amber-400/20 dark:text-amber-300"
+                    : "bg-ink/[0.04] text-ink-subtle"
                 )}
               >
                 {item.count}
