@@ -305,7 +305,24 @@ class IngestModule(WorkModule):
         return all_items, meta
 
     def dedup(self, items: List[NewsItem]) -> Tuple[List[NewsItem], dict]:
-        """去重（URL + 标题相似度）"""
+        """去重（URL + 标题相似度）
+        
+        双层去重策略：
+        1. URL 精确匹配：相同 URL 直接跳过（最快的去重方式）
+        2. 标题相似度去重：使用 Jaccard 相似度对比标题的 n-gram 特征
+           - 避免同一事件被不同来源报道时产生的重复
+        
+        算法流程：
+        - 使用 word_n 和 char_n 两种 n-gram 粒度提取标题特征
+        - 通过 Jaccard 相似度计算标题相似度
+        - 相似度超过阈值视为重复，仅保留第一条
+        
+        Args:
+            items: 待去重的新闻列表
+        
+        Returns:
+            去重后的新闻列表和统计信息
+        """
         cfg = self.dedup_config
         threshold = float(cfg.title_similarity_threshold)
         word_n = int(cfg.word_ngram_n)
@@ -316,10 +333,12 @@ class IngestModule(WorkModule):
         for it in items:
             url = it.url or ''
 
+            # 第一层：URL 精确去重（同一链接只保留一次）
             if url in seen_urls:
                 continue
             seen_urls.add(url)
 
+            # 第二层：标题相似度去重（防止同源不同链接的重复）
             tokens = self.similarity_tokens(it.title or '', word_n, char_n)
             is_dup = any(self.jaccard_similarity(tokens, t) > threshold for t in url_to_tokens.values())
             if is_dup:
@@ -332,11 +351,25 @@ class IngestModule(WorkModule):
         return passed, {'count': len(passed)}
 
     def dedup_recent(self, items: List[NewsItem]) -> Tuple[List[NewsItem], dict]:
-        """与近几日 summary 去重
+        """与近几日历史摘要去重（跨日去重）
 
-        规则：
-        - 近几日频繁出现的新闻视为重复（剔除）
-        - 但连续/累计出现 4+ 天的新闻视为持续热点，保留
+        核心策略：
+        - 检测新闻是否在近几日的摘要中出现过
+        - 已出现的新闻视为重复，予以剔除
+        - 但连续/累计出现 N 天（persistent_days_threshold）以上的新闻视为持续热点，保留
+
+        相似度匹配层级（优先级从高到低）：
+        1. URL 精确匹配：相同链接直接判定为重复
+        2. 标题相似度匹配：使用 Jaccard 相似度对比标题
+        3. 内容摘要相似度匹配：对较长内容（≥48字符）对比正文摘要
+
+        数据来源：从 output 目录读取近 n_days 天的 summary.json 文件
+
+        Args:
+            items: 待去重的新闻列表
+
+        Returns:
+            去重后的新闻列表和统计信息（enabled: 是否启用, dropped: 被剔除数量）
         """
         cfg = self.dedup_config
         if not cfg.recent_summary_enabled:
@@ -350,8 +383,9 @@ class IngestModule(WorkModule):
         persistent_days_threshold = int(self.dedup_config.persistent_days_threshold)
 
         base = datetime.strptime(self._app_config.date_str, '%Y-%m-%d')
-        fingerprints_by_day = {}
+        fingerprints_by_day = {}  # key: 天数偏移(1=昨天), value: 当天摘要的指纹列表
 
+        # 第一步：加载近 n_days 天的历史摘要指纹
         for i in range(1, n_days + 1):
             d = (base - timedelta(days=i)).strftime('%Y-%m-%d')
             path = self._app_config.paths.output_dir() / FN_SUMMARY
@@ -363,6 +397,7 @@ class IngestModule(WorkModule):
                 day_fps = []
                 for it in data.get('items', []):
                     title = (it.get('title') or '').strip()
+                    # 构建内容摘要指纹：组合多个字段，限制最大长度防止内存过大
                     outline = ' '.join(x for x in [
                         it.get('title'), it.get('summary'), it.get('one_liner'),
                         it.get('plain_explain'), it.get('digest_for_outline')
@@ -376,9 +411,11 @@ class IngestModule(WorkModule):
             except Exception:
                 continue
 
+        # 若无历史数据，直接返回（避免误删）
         if not fingerprints_by_day:
             return items, {'enabled': True, 'dropped': 0}
 
+        # 第二步：逐条新闻与历史指纹对比
         kept, dropped = [], 0
         for it in items:
             url = self._norm_url(it.url)
@@ -390,21 +427,28 @@ class IngestModule(WorkModule):
             matched_days = set()
             for day_idx, day_fps in fingerprints_by_day.items():
                 for fp in day_fps:
+                    # 层级1：URL 精确匹配（最高优先级）
                     if url and fp['url_norm'] and url == fp['url_norm']:
                         matched_days.add(day_idx)
                         break
+                    # 层级2：标题相似度匹配
                     if title_tok and fp['title_tok'] and self.jaccard_similarity(title_tok, fp['title_tok']) >= title_thresh:
                         matched_days.add(day_idx)
                         break
+                    # 层级3：内容摘要相似度匹配（仅对较长内容生效）
                     if len(outline) >= 48 and body_tok and fp['body_tok'] and self.jaccard_similarity(body_tok, fp['body_tok']) >= body_thresh:
                         matched_days.add(day_idx)
                         break
 
+            # 决策逻辑：持续热点保留，单次重复剔除
             if len(matched_days) >= persistent_days_threshold:
+                # 在多个日期出现，视为持续热点，保留
                 kept.append(it)
             elif len(matched_days) > 0:
+                # 仅在部分日期出现，视为重复，剔除
                 dropped += 1
             else:
+                # 未在任何历史摘要中出现，保留
                 kept.append(it)
 
         return kept, {'enabled': True, 'dropped': dropped}

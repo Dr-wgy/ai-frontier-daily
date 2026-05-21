@@ -4,7 +4,6 @@
 
 import argparse
 import json
-import logging
 import subprocess
 import sys
 from datetime import datetime
@@ -16,7 +15,11 @@ from typing import Optional
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _PROJECT_ROOT = _SCRIPT_DIR.parent
 _SECRETS_FILE = _PROJECT_ROOT / 'config' / 'secrets.json'
-_LOG_FILE_NAME = 'tmp.log'
+
+
+# 导入 WorkModule 基类
+sys.path.insert(0, str(_PROJECT_ROOT / 'project-space'))
+from utils.work_module import WorkModule
 
 
 def run_lark_cli(cmd_args: list, capture_output: bool = True, input_text: Optional[str] = None) -> Optional[str]:
@@ -28,8 +31,8 @@ def run_lark_cli(cmd_args: list, capture_output: bool = True, input_text: Option
     return output if output and output != 'null' else None
 
 
-class LarkWikiPublisher:
-    """飞书知识库发布器"""
+class LarkWikiPublisher(WorkModule):
+    """飞书知识库发布器（继承自 WorkModule，复用日志和通用方法）"""
     
     # ==================== 配置模板 ====================
     CMD_NODE_LIST = ['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--page-all', '-q', '{query}']
@@ -43,23 +46,17 @@ class LarkWikiPublisher:
     QUERY_DUPLICATE_NODES = '[.data.nodes[] | select(.title | contains("{title_pattern}")) | .node_token]'
     
     def __init__(self, date: str):
+        super().__init__('publish2lark')  # 调用父类初始化，设置模块名称
         self.date = date
         self.output_dir = _PROJECT_ROOT / 'output' / date
         self.briefing_file = self.output_dir / 'briefing.md'
-        self.log_file = self.output_dir / _LOG_FILE_NAME
         
         # 加载配置
         with open(_SECRETS_FILE, 'r', encoding='utf-8') as f:
             self.space_id = json.load(f)['feishu']['space_id']
         
-        # 设置日志
+        # 确保输出目录存在
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.logger = logging.getLogger('publish2lark')
-        self.logger.setLevel(logging.INFO)
-        self.logger.handlers.clear()
-        handler = logging.FileHandler(self.log_file, encoding='utf-8')
-        handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)-8s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
-        self.logger.addHandler(handler)
     
     def _find_or_create_node(self, title: str) -> Optional[str]:
         """查找或创建 wiki 节点"""
@@ -74,84 +71,84 @@ class LarkWikiPublisher:
     def _find_or_create_month_folder(self) -> Optional[str]:
         """查找或创建月份文件夹"""
         month = self.date[:7]
-        self.logger.info(f"=== Step 1/5: 查找或创建月份文件夹 '{month}' ===")
+        self.log(f"=== Step 1/5: 查找或创建月份文件夹 '{month}' ===")
         token = self._find_or_create_node(month)
         if token:
-            self.logger.info(f"月份文件夹 Token: {token}")
+            self.log(f"月份文件夹 Token: {token}")
         return token
     
     def _check_output(self) -> bool:
         """检查早报文件"""
-        self.logger.info("=== Step 2/5: 检查输出文件 ===")
+        self.log("=== Step 2/5: 检查输出文件 ===")
         if self.briefing_file.exists():
             size = self.briefing_file.stat().st_size
             lines = sum(1 for _ in open(self.briefing_file))
-            self.logger.info(f"找到早报文件: {self.briefing_file} (大小: {size} bytes, 行数: {lines})")
+            self.log(f"找到早报文件: {self.briefing_file} (大小: {size} bytes, 行数: {lines})")
             return True
-        self.logger.error(f"早报文件不存在: {self.briefing_file}")
+        self.log(f"早报文件不存在: {self.briefing_file}", level='ERROR')
         return False
     
     def _clean_duplicates(self, parent_token: str) -> None:
         """清理重复文档"""
-        self.logger.info("=== Step 3/5: 检查并清理已存在的当日早报 ===")
+        self.log("=== Step 3/5: 检查并清理已存在的当日早报 ===")
         title_pattern = f"AI 前沿早报（{self.date}）"
         query = self.QUERY_DUPLICATE_NODES.format(title_pattern=title_pattern)
         cmd = [arg.format(space_id=self.space_id, parent_token=parent_token, query=query) for arg in self.CMD_NODE_LIST_BY_PARENT]
         output = run_lark_cli(cmd)
         
         if not output:
-            self.logger.info("未找到已存在的早报文档，跳过清理")
+            self.log("未找到已存在的早报文档，跳过清理")
             return
         
         try:
             nodes = json.loads(output)
         except json.JSONDecodeError:
-            self.logger.info("未找到已存在的早报文档，跳过清理")
+            self.log("未找到已存在的早报文档，跳过清理")
             return
         
         if not isinstance(nodes, list) or len(nodes) == 0:
-            self.logger.info("未找到已存在的早报文档，跳过清理")
+            self.log("未找到已存在的早报文档，跳过清理")
             return
         
-        self.logger.warning(f"找到 {len(nodes)} 个重复文档，移入回收站...")
+        self.log(f"找到 {len(nodes)} 个重复文档，移入回收站...", level='WARNING')
         trash_token = self._find_or_create_node("回收站")
         if not trash_token:
-            self.logger.error("无法创建或找到回收站文件夹")
+            self.log("无法创建或找到回收站文件夹", level='ERROR')
             return
         
-        self.logger.info(f"回收站文件夹 Token: {trash_token}")
+        self.log(f"回收站文件夹 Token: {trash_token}")
         moved = 0
         for token in nodes:
             if token and token != 'null':
-                self.logger.info(f"移动文档 {token} 至回收站...")
+                self.log(f"移动文档 {token} 至回收站...")
                 cmd = [arg.format(node_token=token, target_token=trash_token) for arg in self.CMD_NODE_MOVE]
                 if run_lark_cli(cmd):
                     moved += 1
-        self.logger.info(f"已将 {moved} 个旧文档移入回收站")
+        self.log(f"已将 {moved} 个旧文档移入回收站")
     
     def _publish(self, parent_token: str) -> Optional[str]:
         """发布早报文档"""
-        self.logger.info("=== Step 4/5: 创建并发布早报文档 ===")
+        self.log("=== Step 4/5: 创建并发布早报文档 ===")
         
         title = f"AI 前沿早报（{self.date}）"
         cmd = [arg.format(space_id=self.space_id, title=title, parent_token=parent_token) for arg in self.CMD_NODE_CREATE_WITH_PARENT]
         node_token = run_lark_cli(cmd)
         
         if not node_token:
-            self.logger.error("节点创建失败")
+            self.log("节点创建失败", level='ERROR')
             return None
-        self.logger.info(f"节点创建成功，Doc Token: {node_token}")
+        self.log(f"节点创建成功，Doc Token: {node_token}")
         
-        self.logger.info("开始写入文档内容...")
+        self.log("开始写入文档内容...")
         with open(self.briefing_file, 'r', encoding='utf-8') as f:
             content = f.read()
         
         cmd = [arg.format(doc_token=node_token, title=title) for arg in self.CMD_DOC_UPDATE]
         if not run_lark_cli(cmd, capture_output=True, input_text=content):
-            self.logger.error("文档内容写入失败")
+            self.log("文档内容写入失败", level='ERROR')
             return None
         
-        self.logger.info("文档内容写入成功")
+        self.log("文档内容写入成功")
         url = f"https://my.feishu.cn/wiki/{node_token}"
         print(url)
         return url
@@ -159,17 +156,17 @@ class LarkWikiPublisher:
     def run(self) -> int:
         """执行完整发布流程"""
         sep = "=" * 63
-        self.logger.info(sep)
-        self.logger.info("=== 开始发布 AI 前沿早报到飞书知识库 ===")
-        self.logger.info(f"发布日期: {self.date}")
-        self.logger.info(f"全量执行日志将保存至: {self.log_file}")
-        self.logger.info(sep)
+        self.log(sep)
+        self.log("=== 开始发布 AI 前沿早报到飞书知识库 ===")
+        self.log(f"发布日期: {self.date}")
+        self.log(f"全量执行日志将保存至: {self._log_file}")
+        self.log(sep)
         
         parent_token = self._find_or_create_month_folder()
         if not parent_token:
-            self.logger.error("无法创建或找到月份文件夹")
+            self.log("无法创建或找到月份文件夹", level='ERROR')
             return 1
-        self.logger.info(f"目标目录: {self.date[:7]} (Token: {parent_token})")
+        self.log(f"目标目录: {self.date[:7]} (Token: {parent_token})")
         
         if not self._check_output():
             return 1
@@ -177,14 +174,14 @@ class LarkWikiPublisher:
         self._clean_duplicates(parent_token)
         url = self._publish(parent_token)
         
-        self.logger.info("=== Step 5/5: 发布完成 ===")
-        self.logger.info(sep)
+        self.log("=== Step 5/5: 发布完成 ===")
+        self.log(sep)
         if url:
-            self.logger.info(f"AI 前沿早报（{self.date}）已发布到飞书知识库")
-            self.logger.info(sep)
+            self.log(f"AI 前沿早报（{self.date}）已发布到飞书知识库")
+            self.log(sep)
             return 0
-        self.logger.error("发布失败")
-        self.logger.info(sep)
+        self.log("发布失败", level='ERROR')
+        self.log(sep)
         return 1
 
 

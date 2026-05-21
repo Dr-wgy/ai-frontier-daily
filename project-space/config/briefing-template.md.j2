@@ -2,39 +2,28 @@
 {% macro news_item(it) -%}
 ### {{ it.number }}. {{ it.headline }} {% if it.hot %}{{ it.hot }}{% endif %}
 
-> **垂类标签：** {% if it.vertical_tags %}{% for tag in it.vertical_tags %}#{{ tag }}{% if not loop.last %} {% endif %}{% endfor %}{% else %}无{% endif %}
-> **通用标签：** {% if it.general_tags %}{% for tag in it.general_tags %}#{{ tag }}{% if not loop.last %} {% endif %}{% endfor %}{% else %}无{% endif %}
+> **【垂类标签】**： {% if it.vertical_tags %}{% for tag in it.vertical_tags %}#{{ tag }}{% if not loop.last %} {% endif %}{% endfor %}{% else %}无{% endif %}
+> **【通用标签】**： {% if it.general_tags %}{% for tag in it.general_tags %}#{{ tag }}{% if not loop.last %} {% endif %}{% endfor %}{% else %}无{% endif %}
 
-> **原文链接：** [{{ it.link_label }}]({{ it.url }})
+> **【原文链接】**： [{{ it.link_label }}]({{ it.url }})
 
-**概要：** {{ it.summary }}
+📋 **【概要】：** {{ it.summary }}
 
-**🌱 白话解释：** {{ it.plain_explain }}
+🌱 **【白话】：** {{ it.plain_explain }}
 
-**🎯 影响：** {% set imp_list = it.impacts if it.impacts is iterable and it.impacts is not string else [] %}{% if imp_list %}{% for imp in imp_list %}{{ imp }}{% if not loop.last %} / {% endif %}{% endfor %}{% else %}暂无{% endif %}
+🎯 **【影响】：** {% set imp_list = it.impacts if it.impacts is iterable and it.impacts is not string else [] %}{% if imp_list %}{% for imp in imp_list %}{{ imp }}{% if not loop.last %} / {% endif %}{% endfor %}{% else %}暂无{% endif %}
 
 ---
 {% endmacro %}
-> **时间：** {{ header.date_str }}
->
-> **覆盖范围：** {{ header.coverage_line }}
->
-> **数据来源：** {{ header.sources_str }}
->
-> **标签：** {{ header.header_tag }}
-
----
 
 {% if footer.mode == 'blocks' %}
-> **🚀 今日速览（一句话版）：**
->
+### 🚀 今日速览（一句话版）
 {% for row in footer.rows %}
-> **{{ row.abbrev }}：** {{ row.lines[0] }}
-{% for line in row.lines[1:] %}
-> {{ line }}
+- {{ row.abbrev }}： {{ row.lines[0] }}{% for line in row.lines[1:] %}{{ line }}{% endfor %}
 {% endfor %}
-{% endfor %}
+
 {% else %}
+
 {% for line in footer.fallback_lines %}
 {{ line }}
 {% endfor %}
@@ -59,3 +48,13 @@
 {{ news_item(it) }}
 {% endfor %}
 {% endif %}
+
+---
+
+> **时间：** {{ header.date_str }}
+>
+> **覆盖范围：** {{ header.coverage_line }}
+>
+> **数据来源：** {{ header.sources_str }}
+>
+> **标签：** {{ header.header_tag }}

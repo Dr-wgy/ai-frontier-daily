@@ -1,5 +1,34 @@
 ## 变更日志
 
+### 2026-05-21 (commit: -)，作者：wghlmg1210
+
+#### 研发工程
+
+- **filter_rank** - 新增关键词聚类与历史去重
+  - 新增 `KeywordClusterer` 类，基于 Jaccard 相似度聚类
+  - 新增 `HistoricalKeywordDedup` 类，跨日去重
+  - 输出格式从 items 改为 clusters
+- **assemble** - 支持新旧格式兼容
+  - 新增 `_cluster_to_summary_item()` 方法
+  - 支持 clusters 和 items 两种输入格式
+- **ingest** - 双层去重策略优化
+  - URL 精确匹配 + 标题相似度去重
+  - 跨日去重增加多层匹配（URL/标题/内容摘要）
+- **config** - 新增关键词去重配置段
+  - keyword_dedup.similarity_threshold（聚类阈值）
+  - keyword_dedup.recent_days（历史去重天数）
+- **domain** - 新增 NewsCluster 数据模型
+  - 支持集群合并、关键词管理
+  - 包含 merged_relevance、merged_hot_level 等聚合字段
+
+#### 提示词工程
+
+- **filter_ranker.j2.md、summarizer.j2.md** - 提示词命名调整 & 版本升级
+  - 新增 `keywords` 字段（2-5个关键词）
+  - 定义关键词提取规则和示例
+
+---
+
 ### 2026-05-19 (commit: 66cc36f)，作者：wghlmg1210
 
 #### SKILL框架
@@ -219,6 +248,8 @@
   - `summarize.py`：支持新字段结构（headline、impacts、tags）
   - `ingest.py`：添加选题纠偏和热点持续推送功能
   - 创建 `unified_pipeline.py`：一站式执行 ingest → summarize → assemble
+
+---
 
 ### v1.0.0 - 2026-05-11
 - 初始化项目结构
