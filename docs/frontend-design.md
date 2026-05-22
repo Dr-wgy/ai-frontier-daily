@@ -329,7 +329,48 @@ const nextConfig = {
 
 ---
 
-## 9. 快速启动
+## 9. 数据源配置
+
+### 9.1 飞书多维表格（当前数据源）
+
+项目现已从飞书多维表格读取数据，数据源信息：
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| **多维表格 URL** | `https://ucni7p523jc2.feishu.cn/wiki/UViYwBDsqix41Skaldrcs8DbnGg` | 多维表格入口 |
+| **app_token** | `UViYwBDsqix41Skaldrcs8DbnGg` | 多维表格应用标识 |
+| **table_id** | `tbldczSnB4TNDAOc` | 数据表标识 |
+| **view_id** | `vewUyeyQkO` | 默认视图标识 |
+
+### 9.2 环境变量配置
+
+在 `web/.env.local` 文件中配置：
+
+```bash
+# 飞书应用凭证（必填）
+FEISHU_APP_ID=your_app_id
+FEISHU_APP_SECRET=your_app_secret
+
+# 多维表格配置（必填）
+FEISHU_BITABLE_APP_TOKEN=UViYwBDsqix41Skaldrcs8DbnGg
+FEISHU_BITABLE_TABLE_ID=tbldczSnB4TNDAOc
+
+# 可选配置
+FEISHU_BITABLE_VIEW_ID=vewUyeyQkO          # 默认视图 ID
+FEISHU_API_TIMEOUT=30000                   # API 请求超时时间
+FEISHU_TOKEN_CACHE_TTL=7200000             # Token 缓存时间（2小时）
+```
+
+**如何获取飞书凭证**：
+
+1. 在飞书开发者平台创建应用
+2. 申请 `bitable:app` 和 `bitable:table:readonly` 权限
+3. 在多维表格中添加应用为协作者
+4. 复制 `App ID` 和 `App Secret`
+
+---
+
+## 10. 快速启动
 
 ```bash
 # 1. 进入 web 目录
@@ -338,21 +379,19 @@ cd web
 # 2. 安装依赖
 pnpm install
 
-# 3. 复制日报数据（开发时）
-cp -r ../output content/daily
+# 3. 配置环境变量
+cp .env.local.example .env.local
+# 编辑 .env.local，填入飞书凭证
 
-# 4. 构建索引
-pnpm build:index
-
-# 5. 启动开发服务器
+# 4. 启动开发服务器
 pnpm dev
 
-# 6. 打开 http://localhost:3000
+# 5. 打开 http://localhost:3000
 ```
 
 ---
 
-## 10. 附录：技术栈版本
+## 11. 附录：技术栈版本
 
 | 依赖 | 版本 |
 |------|------|
