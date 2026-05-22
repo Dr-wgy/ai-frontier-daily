@@ -5,8 +5,9 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { BriefingCard } from "@/components/BriefingCard";
 import { SectionNav, type SectionNavItem } from "@/components/SectionNav";
 import {
-  getAllDates,
-  getBriefing,
+  getAllDatesAsync,
+  getBriefingAsync,
+  getBriefingSummaryAsync,
   groupBySection,
 } from "@/lib/content";
 import { SECTION_LABELS, SECTION_ORDER } from "@/lib/types";
@@ -16,32 +17,33 @@ interface DatePageProps {
   params: Promise<{ date: string }>;
 }
 
-export function generateStaticParams() {
-  return getAllDates().map((date) => ({ date }));
+export async function generateStaticParams() {
+  const dates = await getAllDatesAsync();
+  return dates.map((date) => ({ date }));
 }
 
 export async function generateMetadata({
   params,
 }: DatePageProps): Promise<Metadata> {
   const { date } = await params;
-  const briefing = getBriefing(date);
-  if (!briefing) {
+  const summary = await getBriefingSummaryAsync(date);
+  if (!summary) {
     return { title: "未找到早报" };
   }
   return {
     title: `${formatChineseDate(date)} 早报`,
-    description: briefing.blocks.header.coverage_line,
+    description: summary.coverage_line,
   };
 }
 
 export default async function DatePage({ params }: DatePageProps) {
   const { date } = await params;
-  const briefing = getBriefing(date);
+  const briefing = await getBriefingAsync(date);
   if (!briefing) {
     notFound();
   }
 
-  const dates = getAllDates();
+  const dates = await getAllDatesAsync();
   const idx = dates.indexOf(date);
   const newerDate = idx > 0 ? dates[idx - 1] : null;
   const olderDate = idx >= 0 && idx < dates.length - 1 ? dates[idx + 1] : null;
@@ -154,7 +156,7 @@ export default async function DatePage({ params }: DatePageProps) {
                       {"// 板块速览"}
                     </p>
                     <ul className="space-y-1.5">
-                      {footerLines.map((line, i) => (
+                      {footerLines.map((line: string, i: number) => (
                         <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-ink-subtle">
                           <span aria-hidden="true" className="mt-1.5 shrink-0 text-amber-500/60 dark:text-amber-400/30">→</span>
                           <span>{line}</span>
