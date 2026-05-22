@@ -10,9 +10,12 @@ steps:
   - id: publish2lark
     command: bash -c 'cd $HOME/.qclaw/skills/ai-frontier-daily && source .venv/bin/activate && export SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") && export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE && python scripts/publish2lark.py --date "${DATE:-$(date +%Y-%m-%d)}"'
 
+  - id: publish2lark_base
+    command: bash -c 'cd $HOME/.qclaw/skills/ai-frontier-daily && source .venv/bin/activate && export SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") && export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE && python scripts/publish2lark_base.py --date "${DATE:-$(date +%Y-%m-%d)}"'
+
   - id: push2group
     command: bash -c 'cd $HOME/.qclaw/skills/ai-frontier-daily && source .venv/bin/activate && export SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") && export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE && python scripts/push2group.py --date "${DATE:-$(date +%Y-%m-%d)}" --doc-url "${DOC_URL:-$publish2lark.stdout}"'
     stdin: $publish2lark.stdout
 
   - id: final_report
-    command: bash -c 'echo "AI前沿早报发布完成！日期：${DATE:-$(date +%Y-%m-%d)}，文档链接：${DOC_URL:-$publish2lark.stdout}"'
+    command: bash -c 'echo "AI前沿早报发布完成！日期：${DATE:-$(date +%Y-%m-%d)}，文档链接：${DOC_URL:-$publish2lark.stdout}，多维表格：${BASE_URL:-$publish2lark_base.stdout}"'
