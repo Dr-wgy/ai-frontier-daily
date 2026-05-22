@@ -119,7 +119,7 @@ class FeishuBotPusher:
     def _build_payload(self) -> dict[str, Any]:
         """构建飞书交互式卡片 payload"""
         summary = self._load_summary()
-        paragraphs = self._build_paragraphs(summary.get('blocks', {}), summary.get('items', []))
+        paragraphs = self._build_paragraphs(summary.get('blocks', {}), summary.get('clusters', []))
 
         elements = [
             {'tag': 'div', 'text': {'tag': 'lark_md', 'content': p}}
