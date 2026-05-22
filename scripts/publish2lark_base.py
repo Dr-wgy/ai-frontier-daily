@@ -80,10 +80,23 @@ class LarkBasePublisher:
         with open(self.summary_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
-        items = data.get('clusters', [])
+        # 支持 clusters 和 items 两种格式（向后兼容）
+        items = data.get('clusters', data.get('items', []))
+        
+        # 字段重命名映射（旧字段名 -> 新字段名）
+        field_mapping = {
+            'merged_relevance': 'relevance',
+            'merged_hot_level': 'hot_level',
+            'merged_summary': 'summary',
+        }
         
         # 为每条记录添加date字段和daily_report_time字段（使用同步日期）
         for item in items:
+            # 字段重命名
+            for old_name, new_name in field_mapping.items():
+                if old_name in item and new_name not in item:
+                    item[new_name] = item.pop(old_name)
+            
             item['date'] = self.date
             item['daily_report_time'] = self.date  # 日报时间字段，用于record-search查询
         
