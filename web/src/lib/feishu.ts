@@ -6,7 +6,7 @@ const FEISHU_API_BASE = 'https://open.feishu.cn/open-apis';
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
 // Token 失效错误码列表
-const TOKEN_EXPIRED_CODES = [99991663, 10101, 10102]; // token 过期、无效等错误码
+const TOKEN_EXPIRED_CODES = [99991663,]; // token 过期、无效等错误码
 
 async function getFeishuToken(forceRefresh = false): Promise<string> {
   // 如果没有强制刷新且缓存有效，返回缓存的token
