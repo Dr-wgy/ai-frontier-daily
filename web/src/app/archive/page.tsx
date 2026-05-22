@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import { Archive } from "lucide-react";
 import { ArchiveList } from "@/components/ArchiveList";
-import { getAllBriefingSummaries } from "@/lib/content";
+import { getAllBriefingSummariesAsync } from "@/lib/content";
 
 export const metadata: Metadata = {
   title: "往期归档",
   description: "AI 前沿日报往期早报归档列表。",
 };
 
-export default function ArchivePage() {
-  const summaries = getAllBriefingSummaries();
+export default async function ArchivePage() {
+  const summaries = await getAllBriefingSummariesAsync();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14">

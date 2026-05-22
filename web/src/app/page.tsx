@@ -4,16 +4,16 @@ import { ArrowRight } from "lucide-react";
 import { BriefingCard } from "@/components/BriefingCard";
 import { SectionNav, type SectionNavItem } from "@/components/SectionNav";
 import {
-  getLatestBriefing,
-  getLatestDate,
+  getLatestBriefingAsync,
+  getLatestDateAsync,
   groupBySection,
 } from "@/lib/content";
 import { SECTION_LABELS, SECTION_ORDER } from "@/lib/types";
 import { formatChineseDate, weekdayCN } from "@/lib/utils";
 
-export default function HomePage() {
-  const briefing = getLatestBriefing();
-  const date = getLatestDate();
+export default async function HomePage() {
+  const briefing = await getLatestBriefingAsync();
+  const date = await getLatestDateAsync();
   if (!briefing || !date) {
     notFound();
   }
