@@ -40,7 +40,6 @@ class WorkModule(ABC):
 
         output = f"{prefix} {message}"
 
-        print(output, **kwargs)
         sys.stdout.flush()
 
         with open(self._log_file, 'a', encoding='utf-8') as f:

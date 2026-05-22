@@ -49,7 +49,7 @@ from utils import AppConfig
 MAX_BODY_BYTES = 20 * 1024
 
 # 日志配置
-_LOG_FILE_NAME = 'tmp_push.log'
+_LOG_FILE_NAME = 'tmp_push2group.log'
 
 
 def _setup_logger(date: str) -> logging.Logger:
