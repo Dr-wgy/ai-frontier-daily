@@ -15,7 +15,7 @@ domain — AI-Froniteer-Daily 数据模型层
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Set
 
 
 @dataclass(frozen=True)
@@ -48,9 +48,14 @@ class FilteredItem(NewsItem):
     relevance: float = 0.0
     hot_level: float = 0.0
     rank: int = 0
+    keywords: List[str] = field(default_factory=list)
 
     @staticmethod
     def from_dict(d: dict) -> 'FilteredItem':
+        keywords = d.get('keywords', [])
+        if isinstance(keywords, str):
+            keywords = [keywords] if keywords else []
+        
         return FilteredItem(
             title=d.get('title', ''),
             url=d.get('url', ''),
@@ -60,6 +65,7 @@ class FilteredItem(NewsItem):
             _feed_url=d.get('_feed_url', ''),
             main_section=d.get('main_section', ''),
             sub_section=d.get('sub_section', ''),
+            keywords=keywords,
             relevance=float(d.get('relevance', 0)),
             hot_level=float(d.get('hot_level', 0)),
             rank=int(d.get('rank', 0)),
@@ -88,6 +94,7 @@ class FilteredItem(NewsItem):
                 'source_index': si_int,
                 'main_section': row.get('main_section', ''),
                 'sub_section': row.get('sub_section', ''),
+                'keywords': row.get('keywords', []),
                 'relevance': float(row.get('relevance', 0)),
                 'hot_level': float(row.get('hot_level', 0)),
             })
@@ -97,6 +104,10 @@ class FilteredItem(NewsItem):
     @classmethod
     def from_news_and_llm(cls, news_item: NewsItem, llm_result: Dict[str, Any], rank: int) -> 'FilteredItem':
         """从 NewsItem 和 LLM 结果合并创建 FilteredItem"""
+        keywords = llm_result.get('keywords', [])
+        if isinstance(keywords, str):
+            keywords = [keywords] if keywords else []
+        
         return cls(
             title=news_item.title,
             url=news_item.url,
@@ -106,6 +117,7 @@ class FilteredItem(NewsItem):
             _feed_url=news_item._feed_url,
             main_section=llm_result.get('main_section', ''),
             sub_section=llm_result.get('sub_section', ''),
+            keywords=keywords,
             relevance=float(llm_result.get('relevance', 0)),
             hot_level=float(llm_result.get('hot_level', 0)),
             rank=rank,
@@ -209,6 +221,58 @@ class SummaryItem(FilteredItem):
             vertical_tags=vertical_tags,
             general_tags=general_tags,
             hot=d.get('hot', ''),
+        )
+
+
+@dataclass(frozen=True)
+class NewsCluster:
+    """新闻集群（基于关键词聚合的新闻集）"""
+    cluster_id: str
+    keywords: List[str]
+    items: List[FilteredItem]
+    merged_relevance: float
+    merged_hot_level: float
+    main_section: str
+    sub_section: str
+    rank: int
+
+    @property
+    def title(self) -> str:
+        """集群标题（取最相关新闻的标题）"""
+        if not self.items:
+            return ''
+        return max(self.items, key=lambda x: x.relevance).title
+
+    @property
+    def urls(self) -> List[str]:
+        """集群包含的所有URL"""
+        return [item.url for item in self.items]
+
+    @property
+    def sources(self) -> List[str]:
+        """集群包含的所有来源"""
+        return list(set(item.source for item in self.items))
+
+    @property
+    def merged_summary(self) -> str:
+        """合并摘要（取最相关新闻的摘要）"""
+        if not self.items:
+            return ''
+        return max(self.items, key=lambda x: x.relevance).summary
+
+    @staticmethod
+    def from_dict(d: dict) -> 'NewsCluster':
+        """从字典创建 NewsCluster 对象"""
+        items = [FilteredItem.from_dict(it) for it in d.get('items', [])]
+        return NewsCluster(
+            cluster_id=d.get('cluster_id', ''),
+            keywords=d.get('keywords', []),
+            items=items,
+            merged_relevance=float(d.get('merged_relevance', 0)),
+            merged_hot_level=float(d.get('merged_hot_level', 0)),
+            main_section=d.get('main_section', ''),
+            sub_section=d.get('sub_section', ''),
+            rank=int(d.get('rank', 0)),
         )
 
 

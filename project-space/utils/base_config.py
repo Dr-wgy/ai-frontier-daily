@@ -16,8 +16,8 @@ TEMPLATE_BRIEFING = CONFIG_DIR / 'briefing-template.md.j2'
 
 # --- 模板文件名称 ---
 PROMPTS_DIR = _PROJECT_SPACE / 'prompts'
-TEMPLATE_FILTER_RANK = PROMPTS_DIR / 'filter_ranker.md.j2'
-TEMPLATE_SUMMARIZE = PROMPTS_DIR / 'summarizer.md.j2'
+TEMPLATE_FILTER_RANK = PROMPTS_DIR / 'filter_ranker.j2.md'
+TEMPLATE_SUMMARIZE = PROMPTS_DIR / 'summarizer.j2.md'
 
 # --- 输出文件名称常量 ---
 FN_RAW_FETCHED = 'raw_fetched.jsonl'
@@ -55,11 +55,14 @@ class ModuleLayerConfig:
         self.public_feeds = ConfigDict(public_feeds.get('settings', {}))
         self.public_feeds.feeds = public_feeds.get('feeds', [])
         
-        # 去重配置
+        # 内容相似去重配置
         self.dedup = ConfigDict(data.get('dedup', {}))
         
         # 筛选排序配置
         self.filter_rank = ConfigDict(data.get('filter_rank', {}))
+        
+        # 关键词相似去重配置（在筛选排序后执行）
+        self.keyword_dedup = ConfigDict(data.get('keyword_dedup', {}))
         
         # 组装渲染配置
         self.assembly = ConfigDict(data.get('assembly', {}))
@@ -112,6 +115,30 @@ class PathConfig:
             'summary': d / FN_SUMMARY,
             'briefing': d / FN_BRIEFING,
         }
+
+    def get_recent_output_dirs(self, days: int = 3) -> list:
+        """获取近N天的 output 目录（用于关键词历史去重）"""
+        from datetime import datetime, timedelta
+        
+        result = []
+        date_format = '%Y-%m-%d'
+        
+        try:
+            current_date = datetime.strptime(self.date_str, date_format)
+        except ValueError:
+            return result
+        
+        output_root = PROJECT_ROOT / 'output'
+        
+        for i in range(1, days + 1):
+            past_date = current_date - timedelta(days=i)
+            past_date_str = past_date.strftime(date_format)
+            past_dir = output_root / past_date_str
+            
+            if past_dir.is_dir():
+                result.append(past_dir)
+        
+        return result
 
     def get_templates_path(self) -> Path:
         """获取模板文件目录"""

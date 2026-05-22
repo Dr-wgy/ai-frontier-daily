@@ -21,8 +21,8 @@ public_feeds:
     - {source: "开源中国", url: "https://www.oschina.net/news/rss", verify_tls: true}
     - {source: "机器之心", url: "https://www.jiqizhixin.com/rss", verify_tls: false}
 
-# ==================== 去重配置 ====================
-# 配置新闻去重策略和相似度阈值
+# ==================== 内容相似去重配置 ====================
+# 基于标题和摘要内容相似度的去重策略
 dedup:
   title_similarity_threshold: 0.88    # 标题相似度阈值（0-1）
   word_ngram_n: 3                    # 词级N-gram大小
@@ -38,6 +38,17 @@ dedup:
 # 配置新闻筛选和优先级排序的规则
 filter_rank:
   max_news_per_topic: 10             # 每个主题最多保留条数
+
+# ==================== 关键词相似去重配置 ====================
+# 基于关键词聚类和历史关键词匹配的去重策略（在筛选排序后执行）
+keyword_dedup:
+  # 关键词聚类配置
+  similarity_threshold: 0.7           # 关键词相似度阈值（用于聚类）
+  max_items_per_cluster: 5            # 每个集群最多新闻条数
+  
+  # 历史关键词去重配置（从 output 目录下近几天的数据中读取）
+  recent_days: 3                       # 历史去重天数（从 output 目录读取近N天的 filtered_ranked.json）
+  history_similarity_threshold: 0.6    # 历史关键词相似度阈值
 
 # ==================== 组装渲染模块配置 ====================
 # 配置简报组装和模板渲染的参数（模块列表从 classification.main_sections 读取）
