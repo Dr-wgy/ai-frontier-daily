@@ -56,24 +56,26 @@ class SummaryCluster:
         return {
             'cluster_id': self.cluster_id,
             'cluster_index': self.cluster_index,
+            'urls': self.urls,
+            'sources': self.sources,
+
             'headline': self.headline,
-            'title': self.title,  # 兼容旧字段
-            'plain_explain': self.plain_explain,
-            'impacts': self.impacts,
+            'title': self.title,
             'digest_for_outline': self.digest_for_outline,
+            'plain_explain': self.plain_explain,
+            'summary': self.cluster.merged_summary,
+            'impacts': self.impacts,
+            'keywords': self.keywords,
+
+            'relevance': self.cluster.merged_relevance,
+            'hot_level': self.cluster.merged_hot_level,
+
             'main_section': self.main_section,
             'sub_section': self.sub_section,
             'vertical_tags': self.vertical_tags,
             'general_tags': self.general_tags,
             'hot': self.hot,
-            'keywords': self.keywords,
-            'items': [it.__dict__.copy() for it in self.items],
-            'urls': self.urls,
-            'sources': self.sources,
-            'rank': self.cluster.rank,
-            'merged_relevance': self.cluster.merged_relevance,
-            'merged_hot_level': self.cluster.merged_hot_level,
-            'merged_summary': self.cluster.merged_summary,  # 合并摘要
+            'rank': self.cluster.rank
         }
 
 
@@ -86,46 +88,11 @@ class SummarizeModule(WorkModule):
         self._app_config = config
 
     def _load_clusters(self, input_file: str) -> List[NewsCluster]:
-        """加载输入文件，支持从 clusters 字段加载新闻集群"""
+        """加载输入文件，从 clusters 字段加载新闻集群"""
         data = self.load_json(input_file)
-        if data is not None and isinstance(data, dict):
-            # 优先从 clusters 字段加载（阶段二输出格式）
-            if 'clusters' in data:
-                return [NewsCluster.from_dict(it) for it in data.get('clusters', [])]
-            # 兼容旧格式（阶段一输出格式）
-            if 'items' in data:
-                items = [FilteredItem.from_dict(it) for it in data.get('items', [])]
-                # 将单个新闻转换为单条新闻的集群
-                clusters = []
-                for i, item in enumerate(items):
-                    clusters.append(NewsCluster(
-                        cluster_id=f"cluster_{i}",
-                        keywords=item.keywords,
-                        items=[item],
-                        merged_relevance=item.relevance,
-                        merged_hot_level=item.hot_level,
-                        main_section=item.main_section,
-                        sub_section=item.sub_section,
-                        rank=i + 1
-                    ))
-                return clusters
-        
-        # 尝试 JSONL 格式
-        raw_items = self.load_jsonl(input_file)
-        clusters = []
-        for i, raw in enumerate(raw_items):
-            item = FilteredItem.from_dict(raw)
-            clusters.append(NewsCluster(
-                cluster_id=f"cluster_{i}",
-                keywords=item.keywords,
-                items=[item],
-                merged_relevance=item.relevance,
-                merged_hot_level=item.hot_level,
-                main_section=item.main_section,
-                sub_section=item.sub_section,
-                rank=i + 1
-            ))
-        return clusters
+        if data is not None and isinstance(data, dict) and 'clusters' in data:
+            return [NewsCluster.from_dict(it) for it in data.get('clusters', [])]
+        return []
 
     def _build_prompts(self, clusters: Sequence[NewsCluster]) -> tuple:
         """构建 system/user 提示词（针对新闻集群）"""
