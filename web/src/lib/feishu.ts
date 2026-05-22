@@ -5,8 +5,12 @@ const FEISHU_API_BASE = 'https://open.feishu.cn/open-apis';
 // 内存缓存（开发环境用；生产建议换 Redis / Next.js Cache）
 let cachedToken: { token: string; expiresAt: number } | null = null;
 
-async function getFeishuToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt) {
+// Token 失效错误码列表
+const TOKEN_EXPIRED_CODES = [99991663, 10101, 10102]; // token 过期、无效等错误码
+
+async function getFeishuToken(forceRefresh = false): Promise<string> {
+  // 如果没有强制刷新且缓存有效，返回缓存的token
+  if (!forceRefresh && cachedToken && Date.now() < cachedToken.expiresAt) {
     return cachedToken.token;
   }
 
@@ -23,6 +27,8 @@ async function getFeishuToken(): Promise<string> {
   if (data.code !== 0) {
     throw new Error(`飞书 token 获取失败 (${data.code}): ${data.msg}`);
   }
+
+  console.log('飞书 token 获取成功', data);
 
   cachedToken = {
     token: data.tenant_access_token,
@@ -52,24 +58,35 @@ export async function fetchBitableRecords(options?: {
 
   const url = `${FEISHU_API_BASE}/bitable/v1/apps/${appToken}/tables/${tableId}/records?${params.toString()}`;
 
-  const token = await getFeishuToken();
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const fetchWithRetry = async (forceRefresh = false): Promise<{ items: any[]; hasMore: boolean; pageToken: string }> => {
+    // 当 forceRefresh=true 时，强制调用API获取新token，不使用缓存
+    const token = await getFeishuToken(forceRefresh);
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-  const data = await res.json();
-  if (data.code !== 0) {
-    throw new Error(`飞书多维表格读取失败 (${data.code}): ${data.msg}`);
-  }
+    const data = await res.json();
+    
+    // 如果是 token 失效错误，强制刷新token并重试一次
+    if (data.code !== 0 && TOKEN_EXPIRED_CODES.includes(data.code) && !forceRefresh) {
+      return fetchWithRetry(true); // 强制刷新token并重试请求
+    }
 
-  return {
-    items: data.data.items ?? [],
-    hasMore: data.data.has_more ?? false,
-    pageToken: data.data.page_token ?? '',
+    if (data.code !== 0) {
+      throw new Error(`飞书多维表格读取失败 (${data.code}): ${data.msg}`);
+    }
+
+    return {
+      items: data.data.items ?? [],
+      hasMore: data.data.has_more ?? false,
+      pageToken: data.data.page_token ?? '',
+    };
   };
+
+  return fetchWithRetry();
 }
 
 /** 一次性拉取所有分页数据 */
