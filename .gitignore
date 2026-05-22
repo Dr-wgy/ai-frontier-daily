@@ -1,41 +1,28 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
 *.egg-info/
 dist/
 build/
-.eggs/
-.idea/
 
 # 测试与覆盖率
 .pytest_cache/
 .coverage
 htmlcov/
 
-# 日志与生成输出
+# 日志与输出
 *.log
 logs/
 output/
+project-space/logs/
 
 # 虚拟环境
 .venv/
 
-# 操作系统
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# 个人隐私敏感信息
-.env
-config/secrets.json
-
-# 临时与备份
-*.tmp
-*.bak
-*.origin
-
+# IDE 与编辑器
+.idea/
 .vscode/
+
+# Agent / AI 助手
 .agents
 .claude
 .codebuddy
@@ -45,10 +32,25 @@ config/secrets.json
 .qoder
 .qwen
 .trae
-skills
+skills/
 skills-lock.json
-.idea/
-project-space/logs/
 
+# 工作流配置
+ai-frontier-daily.lobster
+ai-frontier-daily-no-wechat.lobster
+
+# 操作系统
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# 个人隐私与敏感信息
+.env
+config/secrets.json
+
+# 临时与备份
+*.tmp
+*.bak
+*.origin
 
 todolist/

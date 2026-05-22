@@ -4,6 +4,9 @@ steps:
   - id: news_frontier
     command: bash -c 'cd $HOME/.qclaw/skills/ai-frontier-daily && source .venv/bin/activate && export SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") && export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE && python scripts/news_frontier.py --date "${DATE:-$(date +%Y-%m-%d)}"'
 
+  - id: render_wechat
+    command: bash -c 'cd $HOME/.qclaw/skills/ai-frontier-daily && source .venv/bin/activate && scripts/render_wechat.sh "${DATE:-$(date +%Y-%m-%d)}"'
+
   - id: publish2lark
     command: bash -c 'cd $HOME/.qclaw/skills/ai-frontier-daily && source .venv/bin/activate && export SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())") && export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE && python scripts/publish2lark.py --date "${DATE:-$(date +%Y-%m-%d)}"'
 
