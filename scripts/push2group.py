@@ -19,12 +19,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import ssl
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -45,6 +47,33 @@ from utils import AppConfig
 # =============================================================================
 
 MAX_BODY_BYTES = 20 * 1024
+
+# 日志配置
+_LOG_FILE_NAME = 'tmp_push2group.log'
+
+
+def _setup_logger(date: str) -> logging.Logger:
+    """设置日志记录器"""
+    log_dir = Path(__file__).resolve().parent.parent / 'output' / date
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / _LOG_FILE_NAME
+    
+    logger = logging.getLogger('push2group')
+    logger.setLevel(logging.INFO)
+    logger.handlers.clear()
+    
+    handler = logging.FileHandler(log_file, encoding='utf-8')
+    handler.setFormatter(logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)-8s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    ))
+    logger.addHandler(handler)
+    
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s', datefmt='%H:%M:%S'))
+    logger.addHandler(console_handler)
+    
+    return logger
 
 
 # =============================================================================
@@ -78,8 +107,9 @@ class PushResult:
 class FeishuBotPusher:
     """飞书机器人推送器"""
 
-    def __init__(self, config: PushConfig):
+    def __init__(self, config: PushConfig, logger: logging.Logger | None = None):
         self.cfg = config
+        self.logger = logger or logging.getLogger('push2group')
         self.footer_modules = {m.id: m.name for m in config.protocols.classification.main_sections}
         self.section_name_to_id = {m.name: m.id for m in config.protocols.classification.main_sections}
 
@@ -89,27 +119,43 @@ class FeishuBotPusher:
 
     def push(self) -> PushResult:
         """执行完整推送流程"""
+        self.logger.info(f"=== 开始推送飞书群消息 ===")
+        self.logger.info(f"推送日期: {self.cfg.date}")
+        self.logger.info(f"文档链接: {self.cfg.doc_url}")
+        self.logger.info(f"推送方式: {'lark-cli' if self.cfg.use_lark_cli else 'Webhook'}")
+        
         try:
             payload = self._build_payload()
+            self.logger.info(f"成功构建 payload，共 {len(payload.get('card', {}).get('elements', []))} 个元素")
+            
             self._validate_payload(payload)
 
             if self.cfg.use_lark_cli:
+                self.logger.info("通过 lark-cli 发送消息...")
                 response = self._send_via_lark_cli(payload)
             else:
+                self.logger.info(f"通过 Webhook 发送消息，共 {len(self.cfg.webhook)} 个目标...")
                 response = self._send_webhook(payload)
 
+            self.logger.info(f"推送成功")
             return PushResult(success=True, message='推送成功', response=response)
         except FileNotFoundError as e:
+            self.logger.error(f"文件不存在: {e}")
             return PushResult(success=False, message=f'文件不存在: {e}')
         except ValueError as e:
+            self.logger.error(f"校验失败: {e}")
             return PushResult(success=False, message=f'校验失败: {e}')
         except RuntimeError as e:
+            self.logger.error(f"运行时错误: {e}")
             return PushResult(success=False, message=str(e))
         except urllib.error.HTTPError as e:
+            self.logger.error(f"HTTP {e.code}: {e.reason}")
             return PushResult(success=False, message=f'HTTP {e.code}: {e.reason}')
         except urllib.error.URLError as e:
+            self.logger.error(f"网络错误: {e.reason}")
             return PushResult(success=False, message=f'网络错误: {e.reason}')
         except Exception as e:
+            self.logger.error(f"未知错误: {e}")
             return PushResult(success=False, message=f'未知错误: {e}')
 
     # -------------------------------------------------------------------------
@@ -118,8 +164,12 @@ class FeishuBotPusher:
 
     def _build_payload(self) -> dict[str, Any]:
         """构建飞书交互式卡片 payload"""
+        self.logger.info("=== 构建 payload ===")
         summary = self._load_summary()
-        paragraphs = self._build_paragraphs(summary.get('blocks', {}), summary.get('items', []))
+        self.logger.info(f"加载 summary.json 成功，共 {len(summary.get('clusters', []))} 个 clusters")
+        
+        paragraphs = self._build_paragraphs(summary.get('blocks', {}), summary.get('clusters', []))
+        self.logger.info(f"构建段落完成，共 {len(paragraphs)} 个段落")
 
         elements = [
             {'tag': 'div', 'text': {'tag': 'lark_md', 'content': p}}
@@ -379,21 +429,32 @@ def main() -> int:
     parser = create_parser()
     args = parser.parse_args()
 
+    logger = _setup_logger(args.date)
+    sep = "=" * 63
+    logger.info(sep)
+    logger.info("=== 飞书群推送脚本启动 ===")
+    logger.info(f"日期: {args.date}")
+    logger.info(f"文档URL: {args.doc_url}")
+    logger.info(sep)
+    
     try:
         config = ConfigFactory.from_args(args)
     except (ValueError, FileNotFoundError) as e:
+        logger.error(f"配置错误: {e}")
         print(f'error: {e}', file=sys.stderr)
         return 1
 
-    pusher = FeishuBotPusher(config)
+    pusher = FeishuBotPusher(config, logger)
     result = pusher.push()
 
     if result.success:
+        logger.info(f"=== 推送完成 ===")
         print(f'success: {result.message}')
         if result.response:
             print(json.dumps(result.response, ensure_ascii=False, indent=2))
         return 0
     else:
+        logger.error(f"=== 推送失败 ===")
         print(f'error: {result.message}', file=sys.stderr)
         return 1
 

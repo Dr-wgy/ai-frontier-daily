@@ -80,7 +80,7 @@ class LarkBasePublisher:
         with open(self.summary_file, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
-        items = data.get('items', [])
+        items = data.get('clusters', [])
         
         # 为每条记录添加date字段和daily_report_time字段（使用同步日期）
         for item in items:
