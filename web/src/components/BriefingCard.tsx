@@ -13,7 +13,7 @@ function formatPubTime(pubTime: string): string {
 }
 
 export function BriefingCard({ item, index }: BriefingCardProps) {
-  const time = formatPubTime(item.pub_time);
+  const time = formatPubTime(item.daily_report_time);
   const tags = [...(item.vertical_tags ?? []), ...(item.general_tags ?? [])];
 
   return (

@@ -34,6 +34,7 @@ function mapRecordToNewsItem(record: { fields: BitableFields }): NewsItem {
     url:        f["url"]          ?? "",
     source:     f["source"]       ?? "",
     summary:    f["summary"]      ?? "",
+    daily_report_time: f["daily_report_time"] ?? "",
     pub_time:   f["pub_time"]    ?? "",
     main_section: f["main_section"] ?? "",
     sub_section:  f["sub_section"]  ?? "",
@@ -66,7 +67,7 @@ function buildBriefingsFromRecords(
   for (const rec of records) {
     const item = mapRecordToNewsItem(rec);
     // 从 pub_time 提取日期（格式 YYYY-MM-DD）
-    const date = item.pub_time?.slice(0, 10) ?? "unknown";
+    const date = item.daily_report_time?.slice(0, 10) ?? "unknown";
     if (!map[date]) map[date] = [];
     map[date].push(item);
   }

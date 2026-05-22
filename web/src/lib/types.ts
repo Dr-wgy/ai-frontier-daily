@@ -34,6 +34,7 @@ export interface NewsItem {
   source: string;
   summary: string;
   pub_time: string;
+  daily_report_time: string;
   _feed_url?: string;
   main_section: string;
   sub_section: string;
