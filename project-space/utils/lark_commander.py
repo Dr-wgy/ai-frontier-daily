@@ -61,6 +61,7 @@ class LarkCmd:
     # === Wiki 命令 ===
     WIKI_NODE_LIST = _LarkCommand(['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--page-all', '-q', '{query}'])
     WIKI_NODE_LIST_BY_PARENT = _LarkCommand(['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--parent-node-token', '{parent_token}', '--page-all', '-q', '{query}'])
+    WIKI_NODE_SEARCH_BITABLE = _LarkCommand(['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--page-all', '-q', '.data.nodes[] | select(.obj_type == "bitable" and (.title | contains("{keyword}"))) | {{node_token: .node_token, obj_token: .obj_token, title: .title}}'])
     WIKI_NODE_CREATE = _LarkCommand(['wiki', '+node-create', '--as', 'user', '--space-id', '{space_id}', '--obj-type', 'docx', '--title', '{title}', '-q', '.data.node_token'])
     WIKI_NODE_CREATE_WITH_PARENT = _LarkCommand(['wiki', '+node-create', '--as', 'user', '--space-id', '{space_id}', '--title', '{title}', '--parent-node-token', '{parent_token}', '-q', '.data.node_token'])
     WIKI_NODE_MOVE = _LarkCommand(['wiki', '+move', '--as', 'user', '--node-token', '{node_token}', '--target-parent-token', '{target_token}'])
@@ -69,9 +70,8 @@ class LarkCmd:
     DOC_UPDATE = _LarkCommand(['docs', '+update', '--api-version', 'v1', '--as', 'user', '--doc', '{doc_token}', '--new-title', '{title}', '--mode', 'overwrite', '--markdown', '-'])
 
     # === Base 命令 ===
-    BASE_SEARCH = _LarkCommand(['base', '+base-search', '--keyword', '{keyword}', '--format', 'json', '-q', '.data.bases[0].base_token'])
     BASE_CREATE = _LarkCommand(['base', '+base-create', '--name', '{name}', '--time-zone', '{timezone}', '--format', 'json', '-q', '.data.base.base_token'])
-    BASE_TABLE_LIST = _LarkCommand(['base', '+table-list', '--base-token', '{base_token}', '--format', 'json', '-q', '.data.tables'])
+    BASE_TABLE_LIST = _LarkCommand(['base', '+table-list', '--base-token', '{base_token}', '-q', '.data.tables'])
     BASE_TABLE_CREATE = _LarkCommand(['base', '+table-create', '--base-token', '{base_token}', '--json', '{table_json}', '--format', 'json', '-q', '.data.table.id'])
     BASE_FIELD_LIST = _LarkCommand(['base', '+field-list', '--base-token', '{base_token}', '--table-id', '{table_id}', '-q', '[.data.fields[] | {field_id: .id, name: .name, type: .type}]'])
     BASE_FIELD_CREATE = _LarkCommand(['base', '+field-create', '--base-token', '{base_token}', '--table-id', '{table_id}', '--json', '{field_json}', '-q', '.data.field.id'])

@@ -39,6 +39,7 @@ class LarkBasePublisher:
             secrets = json.load(f)
             self.base_token = secrets['feishu'].get('base_token', '')
             self.table_id = secrets['feishu'].get('table_id', '')
+            self.space_id = secrets['feishu'].get('space_id', '')
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.logger = get_logger('publish2lark_base', date)
@@ -73,12 +74,24 @@ class LarkBasePublisher:
             return self.base_token
         
         self.logger.info("=== 查找已存在的'AI前沿早报数据库' ===")
-        result = LarkCmd.BASE_SEARCH.args(keyword='AI前沿早报数据库').run(logger=self.logger)
+        if not self.space_id:
+            self.logger.error("未配置 space_id，无法在知识库中搜索")
+            return None
+        
+        result = LarkCmd.WIKI_NODE_SEARCH_BITABLE.args(space_id=self.space_id, keyword='AI前沿早报数据库').run(logger=self.logger)
         
         if result:
-            self.base_token = result
-            self.logger.info(f"找到已存在的多维表格: {self.base_token}")
-            return self.base_token
+            try:
+                items = json.loads(result)
+                if isinstance(items, list) and len(items) > 0:
+                    self.base_token = items[0].get('obj_token', '')
+                elif isinstance(items, dict) and items.get('obj_token'):
+                    self.base_token = items.get('obj_token', '')
+                if self.base_token:
+                    self.logger.info(f"找到已存在的多维表格: {self.base_token}")
+                    return self.base_token
+            except json.JSONDecodeError as e:
+                self.logger.warning(f"解析搜索结果失败: {e}")
         
         self.logger.info("=== 创建新的多维表格 ===")
         result = LarkCmd.BASE_CREATE.args(name='AI前沿早报数据库', timezone='Asia/Shanghai').run(logger=self.logger)
