@@ -68,7 +68,6 @@ class LarkCmd:
 
     # === Docs 命令 ===
     DOC_UPDATE = _LarkCommand(['docs', '+update', '--api-version', 'v1', '--as', 'user', '--doc', '{doc_token}', '--new-title', '{title}', '--mode', 'overwrite', '--markdown', '-'])
-    DOC_SEARCH_BITABLE = _LarkCommand(['docs', '+search', '--query', '{keyword}', '--filter', '{"doc_types":["BITABLE"]}', '--format', 'json', '-q', '.data.items'])
 
     # === Base 命令 ===
     BASE_CREATE = _LarkCommand(['base', '+base-create', '--name', '{name}', '--time-zone', '{timezone}', '--format', 'json', '-q', '.data.base.base_token'])
