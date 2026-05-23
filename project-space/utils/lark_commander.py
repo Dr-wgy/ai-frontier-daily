@@ -71,7 +71,7 @@ class LarkCmd:
 
     # === Base 命令 ===
     BASE_CREATE = _LarkCommand(['base', '+base-create', '--name', '{name}', '--time-zone', '{timezone}', '--format', 'json', '-q', '.data.base.base_token'])
-    BASE_TABLE_LIST = _LarkCommand(['base', '+table-list', '--base-token', '{base_token}', '--format', 'json', '-q', '.data.tables'])
+    BASE_TABLE_LIST = _LarkCommand(['base', '+table-list', '--base-token', '{base_token}', '-q', '.data.tables'])
     BASE_TABLE_CREATE = _LarkCommand(['base', '+table-create', '--base-token', '{base_token}', '--json', '{table_json}', '--format', 'json', '-q', '.data.table.id'])
     BASE_FIELD_LIST = _LarkCommand(['base', '+field-list', '--base-token', '{base_token}', '--table-id', '{table_id}', '-q', '[.data.fields[] | {field_id: .id, name: .name, type: .type}]'])
     BASE_FIELD_CREATE = _LarkCommand(['base', '+field-create', '--base-token', '{base_token}', '--table-id', '{table_id}', '--json', '{field_json}', '-q', '.data.field.id'])
