@@ -83,11 +83,13 @@ class LarkBasePublisher:
         if result:
             try:
                 items = json.loads(result)
-                if items and len(items) > 0:
+                if isinstance(items, list) and len(items) > 0:
                     self.base_token = items[0].get('obj_token', '')
-                    if self.base_token:
-                        self.logger.info(f"找到已存在的多维表格: {self.base_token}")
-                        return self.base_token
+                elif isinstance(items, dict) and items.get('obj_token'):
+                    self.base_token = items.get('obj_token', '')
+                if self.base_token:
+                    self.logger.info(f"找到已存在的多维表格: {self.base_token}")
+                    return self.base_token
             except json.JSONDecodeError as e:
                 self.logger.warning(f"解析搜索结果失败: {e}")
         

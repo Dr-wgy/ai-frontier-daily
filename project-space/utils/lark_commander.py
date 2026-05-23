@@ -61,7 +61,7 @@ class LarkCmd:
     # === Wiki 命令 ===
     WIKI_NODE_LIST = _LarkCommand(['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--page-all', '-q', '{query}'])
     WIKI_NODE_LIST_BY_PARENT = _LarkCommand(['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--parent-node-token', '{parent_token}', '--page-all', '-q', '{query}'])
-    WIKI_NODE_SEARCH_BITABLE = _LarkCommand(['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--page-all', '-q', '.data.nodes[] | select(.obj_type == "bitable" and (.title | contains("{keyword}"))) | {node_token: .node_token, obj_token: .obj_token, title: .title}'])
+    WIKI_NODE_SEARCH_BITABLE = _LarkCommand(['wiki', '+node-list', '--as', 'user', '--space-id', '{space_id}', '--page-all', '-q', '.data.nodes[] | select(.obj_type == "bitable" and (.title | contains("{keyword}"))) | {{node_token: .node_token, obj_token: .obj_token, title: .title}}'])
     WIKI_NODE_CREATE = _LarkCommand(['wiki', '+node-create', '--as', 'user', '--space-id', '{space_id}', '--obj-type', 'docx', '--title', '{title}', '-q', '.data.node_token'])
     WIKI_NODE_CREATE_WITH_PARENT = _LarkCommand(['wiki', '+node-create', '--as', 'user', '--space-id', '{space_id}', '--title', '{title}', '--parent-node-token', '{parent_token}', '-q', '.data.node_token'])
     WIKI_NODE_MOVE = _LarkCommand(['wiki', '+move', '--as', 'user', '--node-token', '{node_token}', '--target-parent-token', '{target_token}'])
