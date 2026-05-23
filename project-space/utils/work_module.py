@@ -12,38 +12,18 @@ import json
 import os
 import re
 from abc import ABC, abstractmethod
-from datetime import datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
 class WorkModule(ABC):
     """流水线工作流模块基类"""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, date: str = None):
         self.name = name
+        self.date = date
         self._config_loaded = False
-        self._log_file = self._get_log_file()
-
-    def _get_log_file(self) -> Path:
-        """获取日志文件路径"""
-        log_dir = Path(__file__).parent.parent / 'logs'
-        log_dir.mkdir(exist_ok=True)
-        return log_dir / f"{self.name}_{datetime.now().strftime('%Y%m%d')}.log"
-
-    def log(self, *args, level: str = 'INFO', **kwargs):
-        """同时输出到 stdout 和日志文件"""
-        import sys
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        prefix = f"[{timestamp}] [{level}] [{self.name}]"
-        message = ' '.join(str(a) for a in args)
-
-        output = f"{prefix} {message}"
-
-        sys.stdout.flush()
-
-        with open(self._log_file, 'a', encoding='utf-8') as f:
-            f.write(output + '\n')
+        from utils.logger import get_logger
+        self.logger = get_logger(name, date)
 
     @abstractmethod
     def run(self, *args, **kwargs) -> Dict[str, Any]:

@@ -32,6 +32,7 @@ PROJECT_SPACE = os.path.join(PROJECT_ROOT, 'project-space')
 sys.path.insert(0, PROJECT_SPACE)
 
 from utils.base_config import AppConfig
+from utils.logger import get_logger
 
 from ingest import IngestModule
 from filter_rank import FilterRankModule
@@ -69,6 +70,7 @@ def main():
     args = parser.parse_args()
 
     date_str = args.date or datetime.now().strftime('%Y-%m-%d')
+    logger = get_logger('news_frontier', date_str)
 
     config = AppConfig(date_str)
     paths = config.paths.day_paths()
@@ -80,59 +82,54 @@ def main():
 
     steps = parse_steps(args.steps)
     if not steps:
-        print('错误: 没有有效的步骤可执行')
+        logger.error('没有有效的步骤可执行')
         return
 
-    print(f'日期: {date_str}')
-    print(f'步骤: {", ".join(steps)}')
-    print(f'输出目录: {paths["dir"]}')
-    print()
+    logger.info(f'日期: {date_str}')
+    logger.info(f'步骤: {", ".join(steps)}')
+    logger.info(f'输出目录: {paths["dir"]}')
 
     if 'ingest' in steps:
-        print('=== Ingest 阶段: RSS 抓取与去重 ===')
+        logger.info('=== Ingest 阶段: RSS 抓取与去重 ===')
         ingest_module = IngestModule(config)
         result = ingest_module.run(str(ingested_path))
-        print(f'抓取: {result["crawl"]["count"]} 条, 状态: {result["crawl"]["status"]}')
-        print(f'去重后: {result["dedup"]["count"]} 条')
-        print(f'近几日去重: 剔除 {result.get("recent_summary_dedup", {}).get("dropped", 0)} 条')
-        print(f'最终写入: {result["count"]} 条 → {ingested_path}')
-        print()
+        logger.info(f'抓取: {result["crawl"]["count"]} 条, 状态: {result["crawl"]["status"]}')
+        logger.info(f'去重后: {result["dedup"]["count"]} 条')
+        logger.info(f'近几日去重: 剔除 {result.get("recent_summary_dedup", {}).get("dropped", 0)} 条')
+        logger.info(f'最终写入: {result["count"]} 条 → {ingested_path}')
 
     if 'filter_rank' in steps:
-        print('=== Filter Rank 阶段: 智能筛选与排序 ===')
+        logger.info('=== Filter Rank 阶段: 智能筛选与排序 ===')
         if not ingested_path.exists():
-            print(f'错误: 输入文件不存在: {ingested_path}')
+            logger.error(f'输入文件不存在: {ingested_path}')
             return
         filter_module = FilterRankModule(config)
         result = filter_module.run(str(ingested_path), str(filtered_path))
-        print(f'输入: {result["input_count"]} 条')
-        print(f'保留: {result["count"]} 条')
-        print(f'API 调用: {result["api_calls"]} 次')
-        print(f'写入: {filtered_path}')
-        print()
+        logger.info(f'输入: {result["input_count"]} 条')
+        logger.info(f'保留: {result["count"]} 条')
+        logger.info(f'API 调用: {result["api_calls"]} 次')
+        logger.info(f'写入: {filtered_path}')
 
     if 'summarize' in steps:
-        print('=== Summarize 阶段: LLM 摘要 ===')
+        logger.info('=== Summarize 阶段: LLM 摘要 ===')
         summarize_module = SummarizeModule(config)
         result = summarize_module.run(str(filtered_path), str(summary_path))
-        print(f'处理: {result["count"]} 条')
-        print(f'API 调用: {result["api_calls"]} 次')
-        print(f'统一模式: {result["unified"]}')
-        print(f'写入: {summary_path}')
-        print()
+        logger.info(f'处理: {result["count"]} 条')
+        logger.info(f'API 调用: {result["api_calls"]} 次')
+        logger.info(f'统一模式: {result["unified"]}')
+        logger.info(f'写入: {summary_path}')
 
     if 'assemble' in steps:
-        print('=== Assemble 阶段: 拼版渲染 ===')
+        logger.info('=== Assemble 阶段: 拼版渲染 ===')
         if not summary_path.exists():
-            print(f'错误: 输入文件不存在: {summary_path}')
+            logger.error(f'输入文件不存在: {summary_path}')
             return
         assemble_module = AssembleModule(config)
         result = assemble_module.run(str(summary_path), str(output_path))
-        print(f'渲染: {result["count"]} 条新闻')
-        print(f'输出: {result["path"]}')
-        print()
+        logger.info(f'渲染: {result["count"]} 条新闻')
+        logger.info(f'输出: {result["path"]}')
 
-    print('=== 完成 ===')
+    logger.info('=== 完成 ===')
 
 
 if __name__ == '__main__':

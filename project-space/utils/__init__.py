@@ -27,6 +27,7 @@ from utils.domain import (
     FilterStats,
     BriefingMeta,
 )
+from utils.lark_commander import LarkCmd
 
 __all__ = [
     "WorkModule",
@@ -52,4 +53,5 @@ __all__ = [
     "SummaryItem",
     "FilterStats",
     "BriefingMeta",
+    "LarkCmd",
 ]

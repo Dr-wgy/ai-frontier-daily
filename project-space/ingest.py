@@ -31,7 +31,7 @@ class IngestModule(WorkModule):
     """RSS 抓取与去重"""
 
     def __init__(self, config: AppConfig):
-        super().__init__('ingest')
+        super().__init__('ingest', config.date_str)
         self.feeds_config = config.modules.public_feeds
         self.dedup_config = config.modules.dedup
         self._app_config = config
@@ -168,7 +168,7 @@ class IngestModule(WorkModule):
             
             return text
         except Exception as e:
-            print(f"  [WARN] 抓取文章失败 {url}: {str(e)[:50]}")
+            self.logger.warning(f"抓取文章失败 {url}: {str(e)[:50]}")
             return ''
 
     def _parse_rss(self, xml_bytes: bytes, source: str) -> List[dict]:
@@ -211,11 +211,10 @@ class IngestModule(WorkModule):
                 pub_dt = self._parse_date(pub_raw)
                 # 如果摘要只是占位符，尝试抓取原文
                 if self.is_placeholder(summary):
-                    print(f"  [INFO] 摘要为占位符，尝试抓取原文: {title[:30]}...")
+                    self.logger.info(f"摘要为占位符，尝试抓取原文: {title[:30]}...")
                     scraped = self._scrape_article_content(link)
                     if scraped and len(scraped) > 50:
                         summary = scraped
-                        # print(f"  [INFO] 成功抓取 {len(summary)} 字符")
                     else:
                         summary = ''  # 仍然为空
                 item = {'title': title, 'url': link.strip(), 'source': source, 'summary': summary}
@@ -281,7 +280,7 @@ class IngestModule(WorkModule):
                 it['_feed_url'] = url
                 all_items.append(it)
                 kept += 1
-            self.log(f"fetch {time.monotonic() - _t0:.2f}s  {url}", level='INFO')
+            self.logger.info(f"fetch {time.monotonic() - _t0:.2f}s  {url}")
 
         # 按时间排序
         def sort_key(it):

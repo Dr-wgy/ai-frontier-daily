@@ -293,8 +293,8 @@ class FilterRankModule(WorkModule):
     """智能筛选与优先级排序（支持关键词聚类与历史去重）"""
 
     def __init__(self, config: AppConfig):
-        super().__init__('filter_rank')
-        self.llm_client = LLMClient(config.llm_client_cfg)
+        super().__init__('filter_rank', config.date_str)
+        self.llm_client = LLMClient(config.llm_client_cfg, self.date)
         self._app_config = config
         self.valid_main_sections = [
             getattr(m, 'name', '') for m in config.protocols.classification.main_sections
@@ -315,8 +315,7 @@ class FilterRankModule(WorkModule):
                 'index': i,
                 'title': it.title,
                 'source': it.source,
-                'url': it.url,
-                'update_time': it.pub_time
+                'summary': it.summary,
             } for i, it in enumerate(items)
         ]
 
@@ -328,15 +327,15 @@ class FilterRankModule(WorkModule):
 
     def run(self, input_file: str, output_file: str) -> dict:
         """执行完整流程"""
-        self.log(f"开始执行筛选排序模块，输入文件: {input_file}")
+        self.logger.info(f"开始执行筛选排序模块，输入文件: {input_file}")
         
         raw_items = self.load_jsonl(input_file)
         news_items = [NewsItem.from_dict(it) for it in raw_items]
         n_input = len(news_items)
-        self.log(f"加载输入数据完成，共 {n_input} 条新闻")
+        self.logger.info(f"加载输入数据完成，共 {n_input} 条新闻")
 
         if n_input == 0:
-            self.log("输入数据为空，直接输出空结果")
+            self.logger.info("输入数据为空，直接输出空结果")
             self.save_json(
                 output_file,
                 {'clusters': [], 'stats': {'input_count': 0, 'output_count': 0}}
@@ -344,14 +343,14 @@ class FilterRankModule(WorkModule):
             return {'count': 0, 'api_calls': 0, 'input_count': 0}
 
         # Step 1: LLM 筛选和关键词提取
-        self.log("Step 1: 开始 LLM 筛选和关键词提取")
+        self.logger.info("Step 1: 开始 LLM 筛选和关键词提取")
         system, user = self._build_prompts(news_items)
         data = self.llm_client.call_json(system, user)
         llm_items = FilteredItem.from_llm_response(data)
-        self.log(f"LLM 筛选完成，通过 {len(llm_items)} 条")
+        self.logger.info(f"LLM 筛选完成，通过 {len(llm_items)} 条")
 
         # Step 2: 构建带关键词的 FilteredItem
-        self.log("Step 2: 构建带关键词的 FilteredItem")
+        self.logger.info("Step 2: 构建带关键词的 FilteredItem")
         filtered_items = []
         for row in llm_items:
             si = row['source_index']
@@ -373,10 +372,10 @@ class FilterRankModule(WorkModule):
             rank = len(filtered_items) + 1
             filtered_item = FilteredItem.from_news_and_llm(original, row, rank)
             filtered_items.append(filtered_item)
-        self.log(f"构建 FilteredItem 完成，共 {len(filtered_items)} 条")
+        self.logger.info(f"构建 FilteredItem 完成，共 {len(filtered_items)} 条")
 
         # Step 3: 关键词聚类
-        self.log("Step 3: 开始关键词聚类")
+        self.logger.info("Step 3: 开始关键词聚类")
         clusters = self.clusterer.cluster_by_keywords(
             filtered_items,
             max_items_per_cluster=getattr(
@@ -385,24 +384,24 @@ class FilterRankModule(WorkModule):
                 5
             )
         )
-        self.log(f"关键词聚类完成，生成 {len(clusters)} 个集群")
+        self.logger.info(f"关键词聚类完成，生成 {len(clusters)} 个集群")
 
         # Step 4: 历史关键词去重
-        self.log("Step 4: 开始历史关键词去重")
+        self.logger.info("Step 4: 开始历史关键词去重")
         clusters, dropped_ids = self.historical_dedup.dedup_by_history(clusters)
-        self.log(f"历史去重完成，保留 {len(clusters)} 个集群，丢弃 {len(dropped_ids)} 个")
+        self.logger.info(f"历史去重完成，保留 {len(clusters)} 个集群，丢弃 {len(dropped_ids)} 个")
         if dropped_ids:
-            self.log(f"丢弃的集群: {dropped_ids}", level='DEBUG')
+            self.logger.debug(f"丢弃的集群: {dropped_ids}")
 
         # Step 5: 板块数量控制
-        self.log("Step 5: 执行板块数量控制")
+        self.logger.info("Step 5: 执行板块数量控制")
         section_counts = {}
         final_clusters = []
         for cluster in clusters:
             if section_counts.get(cluster.main_section, 0) < self.max_news_per_topic:
                 final_clusters.append(cluster)
                 section_counts[cluster.main_section] = section_counts.get(cluster.main_section, 0) + 1
-        self.log(f"板块数量控制完成，最终保留 {len(final_clusters)} 个集群")
+        self.logger.info(f"板块数量控制完成，最终保留 {len(final_clusters)} 个集群")
 
         # 重新分配排名
         for i, cluster in enumerate(final_clusters):
@@ -429,7 +428,7 @@ class FilterRankModule(WorkModule):
         }
 
         self.save_json(output_file, result)
-        self.log(f"筛选排序模块执行完成，输出到: {output_file}")
+        self.logger.info(f"筛选排序模块执行完成，输出到: {output_file}")
         
         return {
             'count': len(final_clusters),

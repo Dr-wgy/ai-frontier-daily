@@ -277,6 +277,86 @@ class NewsCluster:
 
 
 @dataclass(frozen=True)
+class SummaryCluster:
+    """摘要后的新闻集群（封装 NewsCluster + LLM 返回数据）"""
+    cluster: 'NewsCluster'
+    cluster_index: int = 0
+    headline: str = ''
+    plain_explain: str = ''
+    impacts: list = field(default_factory=list)
+    digest_for_outline: str = ''
+    main_section: str = ''
+    sub_section: str = ''
+    vertical_tags: list = field(default_factory=list)
+    general_tags: list = field(default_factory=list)
+    hot: str = ''
+
+    def __init__(self, cluster: 'NewsCluster', llm_data: dict):
+        # 使用 object.__setattr__ 绕过 frozen dataclass 限制
+        object.__setattr__(self, 'cluster', cluster)
+        object.__setattr__(self, 'cluster_index', llm_data.get('cluster_index', 0))
+        object.__setattr__(self, 'headline', llm_data.get('headline', ''))
+        object.__setattr__(self, 'plain_explain', llm_data.get('plain_explain', ''))
+        object.__setattr__(self, 'impacts', llm_data.get('impacts', []) if isinstance(llm_data.get('impacts'), list) else [])
+        object.__setattr__(self, 'digest_for_outline', llm_data.get('digest_for_outline', ''))
+        object.__setattr__(self, 'main_section', llm_data.get('main_section', cluster.main_section))
+        object.__setattr__(self, 'sub_section', llm_data.get('sub_section', cluster.sub_section))
+        object.__setattr__(self, 'vertical_tags', llm_data.get('vertical_tags', []) if isinstance(llm_data.get('vertical_tags'), list) else [])
+        object.__setattr__(self, 'general_tags', llm_data.get('general_tags', []) if isinstance(llm_data.get('general_tags'), list) else [])
+        object.__setattr__(self, 'hot', llm_data.get('hot', ''))
+
+    @property
+    def cluster_id(self) -> str:
+        return self.cluster.cluster_id
+
+    @property
+    def keywords(self) -> list:
+        return self.cluster.keywords
+
+    @property
+    def items(self) -> list:
+        return self.cluster.items
+
+    @property
+    def title(self) -> str:
+        return self.cluster.title
+
+    @property
+    def urls(self) -> list:
+        return self.cluster.urls
+
+    @property
+    def sources(self) -> list:
+        return self.cluster.sources
+
+    def to_dict(self) -> dict:
+        return {
+            'cluster_id': self.cluster_id,
+            'cluster_index': self.cluster_index,
+            'urls': self.urls,
+            'sources': self.sources,
+
+            'headline': self.headline,
+            'title': self.title,
+            'digest_for_outline': self.digest_for_outline,
+            'plain_explain': self.plain_explain,
+            'summary': self.cluster.merged_summary,
+            'impacts': self.impacts,
+            'keywords': self.keywords,
+
+            'relevance': self.cluster.merged_relevance,
+            'hot_level': self.cluster.merged_hot_level,
+
+            'main_section': self.main_section,
+            'sub_section': self.sub_section,
+            'vertical_tags': self.vertical_tags,
+            'general_tags': self.general_tags,
+            'hot': self.hot,
+            'rank': self.cluster.rank
+        }
+
+
+@dataclass(frozen=True)
 class FilterStats:
     """筛选统计信息"""
     input_count: int = 0

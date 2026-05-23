@@ -21,12 +21,10 @@ import argparse
 import json
 import logging
 import ssl
-import subprocess
 import sys
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +38,8 @@ for p in (_PROJECT_ROOT, _POSTACT_SPACE, _PROJECT_SPACE):
         sys.path.insert(0, str(p))
 
 from utils import AppConfig
+from utils.logger import get_logger
+from utils.lark_commander import LarkCmd
 
 
 # =============================================================================
@@ -47,33 +47,6 @@ from utils import AppConfig
 # =============================================================================
 
 MAX_BODY_BYTES = 20 * 1024
-
-# 日志配置
-_LOG_FILE_NAME = 'tmp_push2group.log'
-
-
-def _setup_logger(date: str) -> logging.Logger:
-    """设置日志记录器"""
-    log_dir = Path(__file__).resolve().parent.parent / 'output' / date
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / _LOG_FILE_NAME
-    
-    logger = logging.getLogger('push2group')
-    logger.setLevel(logging.INFO)
-    logger.handlers.clear()
-    
-    handler = logging.FileHandler(log_file, encoding='utf-8')
-    handler.setFormatter(logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)-8s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    ))
-    logger.addHandler(handler)
-    
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)-8s - %(message)s', datefmt='%H:%M:%S'))
-    logger.addHandler(console_handler)
-    
-    return logger
 
 
 # =============================================================================
@@ -292,25 +265,16 @@ class FeishuBotPusher:
         if not chat_id:
             raise ValueError('缺少 chat-id 配置')
 
-        cmd = [
-            'lark-cli', 'im', '+messages-send',
-            '--chat-id', chat_id,
-            '--msg-type', 'interactive',
-            '--content', json.dumps(payload['card'], ensure_ascii=False)
-        ]
+        content = json.dumps(payload['card'], ensure_ascii=False)
+        result = LarkCmd.IM_MESSAGE_SEND.args(
+            chat_id=chat_id,
+            content=content
+        ).run(logger=self.logger)
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            encoding='utf-8'
-        )
+        if result is None:
+            raise RuntimeError('lark-cli 推送失败')
 
-        if result.returncode != 0:
-            raise RuntimeError(f'lark-cli 推送失败: {result.stderr or result.stdout}')
-
-        raw = result.stdout.strip()
-        return json.loads(raw) if raw else {}
+        return json.loads(result) if result else {}
 
     def _load_chat_id_from_secrets(self) -> str | None:
         """从 secrets.json 加载 chat_id"""
@@ -429,7 +393,7 @@ def main() -> int:
     parser = create_parser()
     args = parser.parse_args()
 
-    logger = _setup_logger(args.date)
+    logger = get_logger('push2group', args.date)
     sep = "=" * 63
     logger.info(sep)
     logger.info("=== 飞书群推送脚本启动 ===")
@@ -441,7 +405,6 @@ def main() -> int:
         config = ConfigFactory.from_args(args)
     except (ValueError, FileNotFoundError) as e:
         logger.error(f"配置错误: {e}")
-        print(f'error: {e}', file=sys.stderr)
         return 1
 
     pusher = FeishuBotPusher(config, logger)
@@ -449,13 +412,13 @@ def main() -> int:
 
     if result.success:
         logger.info(f"=== 推送完成 ===")
-        print(f'success: {result.message}')
+        logger.info(f"success: {result.message}")
         if result.response:
-            print(json.dumps(result.response, ensure_ascii=False, indent=2))
+            logger.info(json.dumps(result.response, ensure_ascii=False, indent=2))
         return 0
     else:
         logger.error(f"=== 推送失败 ===")
-        print(f'error: {result.message}', file=sys.stderr)
+        logger.error(f"error: {result.message}")
         return 1
 
 

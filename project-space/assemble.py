@@ -22,7 +22,7 @@ class AssembleModule(WorkModule):
     """拼版渲染"""
 
     def __init__(self, config: AppConfig):
-        super().__init__('assemble')
+        super().__init__('assemble', config.date_str)
         self._app_config = config
         self.assembly_cfg = config.modules.assembly
         self.modules = config.protocols.classification.main_sections
@@ -204,7 +204,7 @@ class AssembleModule(WorkModule):
                 if has_plain or has_impacts:
                     summary_items.append(it)
                 else:
-                    self.log(f"[过滤] [{m.name}] 标题: {it.title[:50]}... 原因: plain_explain={has_plain}, impacts={has_impacts}", level='DEBUG')
+                    self.logger.debug(f"[过滤] [{m.name}] 标题: {it.title[:50]}... 原因: plain_explain={has_plain}, impacts={has_impacts}")
             entries = [self._news_row(f"{i}.{j+1}", it, cap) for j, it in enumerate(summary_items)]
             sections.append({'heading': f"## {cn}、{m.name}\n", 'empty': not summary_items, 'entries': entries})
 

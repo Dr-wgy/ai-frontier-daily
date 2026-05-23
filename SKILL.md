@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 ```bash
 # 运行环境初始化脚本
-./scripts/init_env.sh
+./scripts/base/init_env.sh
 
 # 配置 secrets.json
 cp config/secrets.example.json config/secrets.json
@@ -22,12 +22,14 @@ cp config/secrets.example.json config/secrets.json
 ## 2. Lobster 工作流
 
 > ⚠️ **必须严格使用 lobster 工具执行**，不可直接运行单个脚本文件。
+>
+> `lobster` 是 OpenClaw 的内置工具（tools），用于编排和运行多步骤工作流。
 
 ```bash
 lobster({ filePath: "<skill-path>/references/ai-frontier-daily.lobster" })
 ```
 
-**步骤**：`news_frontier` → `render_wechat` → `publish2lark` → `push2group` → `final_report`
+**步骤**：`cleanup` → `news_frontier` → `render_wechat` → `publish2lark` → `push2group` → `publish2lark_base` → `final_report`
 
 ## 3. 产物
 
@@ -37,15 +39,19 @@ lobster({ filePath: "<skill-path>/references/ai-frontier-daily.lobster" })
 | `output/<DATE>/summary.json` | LLM 摘要（机器人推送用） |
 | `output/<DATE>/filtered_ranked.json` | 筛选排序中间产物 |
 | `output/<DATE>/ingested.jsonl` | 原始采集条目 |
+| `/tmp/afinfo-doc_url.txt` | 飞书文档 URL（step 间传递） |
+| `/tmp/afinfo-base_url.txt` | 多维表格 URL（step 间传递） |
 
 ## 4. 脚本说明
 
 | 脚本 | 功能 |
 |------|------|
-| `scripts/init_env.sh` | 环境初始化（首次使用运行） |
+| `scripts/base/init_env.sh` | 环境初始化（首次使用运行） |
+| `scripts/base/run.sh` | 环境启动器（cd + venv + SSL + exec 透传） |
 | `scripts/news_frontier.py` | 主流水线（ingest → filter_rank → summarize → assemble） |
 | `scripts/render_wechat.sh` | 微信公众号排版渲染 |
-| `scripts/publish2lark.sh` | 飞书知识库发布（月份自动归档 + 同名去重） |
+| `scripts/publish2lark.py` | 飞书知识库发布（月份自动归档 + 同名去重） |
+| `scripts/publish2lark_base.py` | 多维表格记录更新 |
 | `scripts/push2group.py` | 群机器人交互式卡片推送 |
 
 详细流程见 [references/PIPELINE.md](./references/PIPELINE.md)。

@@ -4,8 +4,6 @@
 
 import argparse
 import json
-import logging
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -15,26 +13,10 @@ from typing import Optional, List, Dict, Any
 _SCRIPT_DIR = Path(__file__).resolve().parent
 _PROJECT_ROOT = _SCRIPT_DIR.parent
 _SECRETS_FILE = _PROJECT_ROOT / 'config' / 'secrets.json'
-_LOG_FILE_NAME = 'tmp_base.log'
 
-
-def run_lark_cli(cmd_args: list, capture_output: bool = True, input_text: Optional[str] = None) -> Optional[str]:
-    """运行 lark-cli 命令，返回处理后的输出。失败时打印详细错误信息。"""
-    cmd_str = ' '.join(['lark-cli'] + cmd_args)
-    result = subprocess.run(['lark-cli'] + cmd_args, capture_output=capture_output, text=True, encoding='utf-8', input=input_text)
-    
-    if result.returncode != 0:
-        print(f"❌ 命令执行失败: {cmd_str}")
-        if result.stderr:
-            print(f"   错误信息: {result.stderr.strip()}")
-        else:
-            print(f"   返回码: {result.returncode}")
-        return None
-    
-    output = result.stdout.strip()
-    if output and output != 'null':
-        return output
-    return None
+sys.path.insert(0, str(_PROJECT_ROOT / 'project-space'))
+from utils.logger import get_logger
+from utils.lark_commander import LarkCmd
 
 
 class LarkBasePublisher:
@@ -52,21 +34,15 @@ class LarkBasePublisher:
         self.date = date
         self.output_dir = _PROJECT_ROOT / 'output' / date
         self.summary_file = self.output_dir / 'summary.json'
-        self.log_file = self.output_dir / _LOG_FILE_NAME
-        
+
         with open(_SECRETS_FILE, 'r', encoding='utf-8') as f:
             secrets = json.load(f)
             self.base_token = secrets['feishu'].get('base_token', '')
             self.table_id = secrets['feishu'].get('table_id', '')
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.logger = logging.getLogger('publish2lark_base')
-        self.logger.setLevel(logging.INFO)
-        self.logger.handlers.clear()
-        handler = logging.FileHandler(self.log_file, encoding='utf-8')
-        handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)-8s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S'))
-        self.logger.addHandler(handler)
-        
+        self.logger = get_logger('publish2lark_base', date)
+
         self.field_name_to_id = {}
         self.field_name_to_type = {}
 
@@ -97,9 +73,7 @@ class LarkBasePublisher:
             return self.base_token
         
         self.logger.info("=== 查找已存在的'AI前沿早报数据库' ===")
-        # 搜索名为"AI前沿早报数据库"的多维表格
-        cmd = ['base', '+base-search', '--keyword', 'AI前沿早报数据库', '--format', 'json', '-q', '.data.bases[0].base_token']
-        result = run_lark_cli(cmd)
+        result = LarkCmd.BASE_SEARCH.args(keyword='AI前沿早报数据库').run(logger=self.logger)
         
         if result:
             self.base_token = result
@@ -107,8 +81,7 @@ class LarkBasePublisher:
             return self.base_token
         
         self.logger.info("=== 创建新的多维表格 ===")
-        cmd = ['base', '+base-create', '--name', 'AI前沿早报数据库', '--time-zone', 'Asia/Shanghai', '--format', 'json', '-q', '.data.base.base_token']
-        result = run_lark_cli(cmd)
+        result = LarkCmd.BASE_CREATE.args(name='AI前沿早报数据库', timezone='Asia/Shanghai').run(logger=self.logger)
         if result:
             self.base_token = result
             self.logger.info(f"成功创建多维表格: {self.base_token}")
@@ -123,9 +96,7 @@ class LarkBasePublisher:
             return self.table_id
         
         self.logger.info("=== 查找已存在的'早报记录'表 ===")
-        # 获取当前Base下的所有表格
-        cmd = ['base', '+table-list', '--base-token', self.base_token, '--format', 'json', '-q', '.data.tables']
-        result = run_lark_cli(cmd)
+        result = LarkCmd.BASE_TABLE_LIST.args(base_token=self.base_token).run(logger=self.logger)
         
         if result:
             try:
@@ -139,10 +110,10 @@ class LarkBasePublisher:
                 self.logger.warning(f"解析表格列表失败: {e}")
         
         self.logger.info("=== 创建新的数据表'早报记录' ===")
-        # 创建新表
-        table_json = json.dumps({"name": "早报记录"}, ensure_ascii=False)
-        cmd = ['base', '+table-create', '--base-token', self.base_token, '--json', table_json, '--format', 'json', '-q', '.data.table.id']
-        table_id = run_lark_cli(cmd)
+        table_id = LarkCmd.BASE_TABLE_CREATE.args(
+            base_token=self.base_token,
+            table_json=json.dumps({"name": "早报记录"}, ensure_ascii=False)
+        ).run(logger=self.logger)
         
         if not table_id:
             self.logger.error("无法创建数据表")
@@ -171,8 +142,10 @@ class LarkBasePublisher:
         """同步字段：根据summary.json动态创建不存在的字段"""
         self.logger.info("=== 同步字段 ===")
         
-        cmd = ['base', '+field-list', '--base-token', self.base_token, '--table-id', self.table_id, '-q', '[.data.fields[] | {field_id: .id, name: .name, type: .type}]']
-        result = run_lark_cli(cmd)
+        result = LarkCmd.BASE_FIELD_LIST.args(
+            base_token=self.base_token,
+            table_id=self.table_id
+        ).run(logger=self.logger)
         
         existing_fields = {}
         if result:
@@ -218,14 +191,11 @@ class LarkBasePublisher:
             
             field_json = {"name": field_name, "type": field_type}
             
-            cmd = [
-                'base', '+field-create',
-                '--base-token', self.base_token,
-                '--table-id', self.table_id,
-                '--json', json.dumps(field_json, ensure_ascii=False),
-                '-q', '.data.field.id'
-            ]
-            result = run_lark_cli(cmd)
+            result = LarkCmd.BASE_FIELD_CREATE.args(
+                base_token=self.base_token,
+                table_id=self.table_id,
+                field_json=json.dumps(field_json, ensure_ascii=False)
+            ).run(logger=self.logger)
             if result:
                 self.field_name_to_id[field_name] = result
                 self.field_name_to_type[field_name] = field_type
@@ -270,15 +240,11 @@ class LarkBasePublisher:
                 "offset": offset
             })
             
-            cmd = [
-                'base', '+record-search',
-                '--base-token', self.base_token,
-                '--table-id', self.table_id,
-                '--json', search_json,
-                '--format', 'json'
-            ]
-            
-            result = run_lark_cli(cmd)
+            result = LarkCmd.BASE_RECORD_SEARCH.args(
+                base_token=self.base_token,
+                table_id=self.table_id,
+                search_json=search_json
+            ).run(logger=self.logger)
             if not result:
                 break
             
@@ -327,15 +293,11 @@ class LarkBasePublisher:
             for i in range(0, len(today_record_ids), batch_size):
                 batch_record_ids = today_record_ids[i:i+batch_size]
                 delete_json = json.dumps({"record_id_list": batch_record_ids})
-                cmd = [
-                    'base', '+record-delete',
-                    '--base-token', self.base_token,
-                    '--table-id', self.table_id,
-                    '--json', delete_json,
-                    '--yes',
-                    '-q', '.data.deleted_record_id_list'
-                ]
-                delete_result = run_lark_cli(cmd)
+                delete_result = LarkCmd.BASE_RECORD_DELETE.args(
+                    base_token=self.base_token,
+                    table_id=self.table_id,
+                    delete_json=delete_json
+                ).run()
                 if delete_result:
                     deleted_ids = json.loads(delete_result)
                     deleted_count += len(deleted_ids)
@@ -393,14 +355,11 @@ class LarkBasePublisher:
             batch = rows[i:i+batch_size]
             data = json.dumps({"fields": field_ids, "rows": batch}, ensure_ascii=False)
 
-            cmd = [
-                'base', '+record-batch-create',
-                '--base-token', self.base_token,
-                '--table-id', self.table_id,
-                '--json', data,
-                '-q', '.data.record_id_list'
-            ]
-            result = run_lark_cli(cmd)
+            result = LarkCmd.BASE_RECORD_BATCH_CREATE.args(
+                base_token=self.base_token,
+                table_id=self.table_id,
+                data_json=data
+            ).run(logger=self.logger)
             if result:
                 try:
                     record_ids = json.loads(result)
@@ -419,7 +378,6 @@ class LarkBasePublisher:
         self.logger.info(sep)
         self.logger.info("=== 开始同步 AI 前沿早报到飞书多维表格 ===")
         self.logger.info(f"同步日期: {self.date}")
-        self.logger.info(f"日志文件: {self.log_file}")
         self.logger.info(sep)
         
         items = self._load_summary()

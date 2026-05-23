@@ -10,14 +10,24 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  ai-frontier-daily.lobster                                              │
 │                                                                         │
-│  ┌──────────────┐    ┌──────────────┐    ┌─────────────────┐           │
-│  │news_frontier │───▶│render_wechat │───▶│  publish2lark   │           │
-│  └──────────────┘    └──────────────┘    └─────────────────┘           │
-│                                                   │                    │
-│                                                   ▼                    │
-│                                          ┌───────────┐                 │
-│                                          │push2group │───▶ final_report│
-│                                          └───────────┘                 │
+│  ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌─────────────────┐           │
+│  │cleanup   │───▶│news_frontier │───▶│render_wechat │───▶│  publish2lark   │           │
+│  └──────────┘    └──────────────┘    └──────────────┘    └─────────────────┘           │
+│                                                                   │                    │
+│                                                                   ▼                    │
+│                                                          ┌───────────┐                 │
+│                                                          │push2group │                 │
+│                                                          └───────────┘                 │
+│                                                                   │                    │
+│                                                                   ▼                    │
+│                                                          ┌─────────────────┐           │
+│                                                          │publish2lark_base│           │
+│                                                          └─────────────────┘           │
+│                                                                   │                    │
+│                                                                   ▼                    │
+│                                                          ┌──────────────┐              │
+│                                                          │final_report  │              │
+│                                                          └──────────────┘              │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -25,17 +35,16 @@
 
 ## 2. 步骤详解
 
-### Step 0: 环境准备
+### Step 0: `cleanup`
 
-**功能**：激活虚拟环境并配置 SSL 证书
+**功能**：清理临时文件，保障每次运行环境干净
 
-**配置命令**：
+**调用命令**：
 ```bash
-cd /Users/han.qishu/Professional/ai-frontier-daily
-source .venv/bin/activate
-export SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())")
-export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE
+rm -f /tmp/afinfo-*.txt
 ```
+
+**说明**：删除上一次运行遗留的中间文件，避免脏数据干扰
 
 ---
 
@@ -45,7 +54,7 @@ export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE
 
 **调用命令**：
 ```bash
-cd /Users/han.qishu/Professional/ai-frontier-daily && python3 scripts/news_frontier.py --date "${DATE}"
+$SKILL_DIR/scripts/base/run.sh python scripts/news_frontier.py --date $args.date
 ```
 
 **内部流程**（4 个子阶段）：
@@ -74,7 +83,7 @@ cd /Users/han.qishu/Professional/ai-frontier-daily && python3 scripts/news_front
 
 **调用命令**：
 ```bash
-DATE="${DATE}"; /Users/han.qishu/Professional/ai-frontier-daily/scripts/render_wechat.sh "$DATE"
+$SKILL_DIR/scripts/base/run.sh bash scripts/render_wechat.sh $args.date
 ```
 
 ---
@@ -85,7 +94,7 @@ DATE="${DATE}"; /Users/han.qishu/Professional/ai-frontier-daily/scripts/render_w
 
 **调用命令**：
 ```bash
-DATE="${DATE}"; python3 /Users/han.qishu/Professional/ai-frontier-daily/scripts/publish2lark.py --date "$DATE"
+bash -c '$SKILL_DIR/scripts/base/run.sh python scripts/publish2lark.py --date $args.date > /tmp/afinfo-doc_url.txt'
 ```
 
 **内部流程**（5 个子步骤）：
@@ -127,8 +136,8 @@ IF 知识库中存在 "AI 前沿早报（YYYY-MM-DD）"
 ```
 
 **输出**：
-- 标准输出最后一行：文档链接 URL (`https://my.feishu.cn/wiki/{node_token}`)
-- 供后续 `push2group` 步骤使用
+- 标准输出重定向到 `/tmp/afinfo-doc_url.txt`
+- 供后续 `push2group` 和 `final_report` 步骤使用
 
 ---
 
@@ -138,11 +147,11 @@ IF 知识库中存在 "AI 前沿早报（YYYY-MM-DD）"
 
 **调用命令**：
 ```bash
-DATE="${DATE}"; DOC_URL="${DOC_URL:-$publish2lark.stdout}"; python3 scripts/push2group.py --date "${DATE}" --doc-url "${DOC_URL}"
+bash -c 'DOC_URL=$(cat /tmp/afinfo-doc_url.txt) && $SKILL_DIR/scripts/base/run.sh python scripts/push2group.py --date $args.date --doc-url "$DOC_URL"'
 ```
 
 **输入依赖**：
-- `$publish2lark.stdout`：上一步输出的文档链接（自动获取）
+- `/tmp/afinfo-doc_url.txt`：上一步输出的文档链接
 - `output/{DATE}/summary.json`：早报摘要数据
 
 **卡片内容**：
@@ -155,13 +164,49 @@ DATE="${DATE}"; DOC_URL="${DOC_URL:-$publish2lark.stdout}"; python3 scripts/push
 
 ---
 
-### Step 5: `final_report`
+### Step 5: `publish2lark_base`
+
+**功能**：更新多维表格记录
+
+**调用命令**：
+```bash
+bash -c '$SKILL_DIR/scripts/base/run.sh python scripts/publish2lark_base.py --date $args.date > /tmp/afinfo-base_url.txt'
+```
+
+**内部流程**（6 个子步骤）：
+
+```
+Step 1/6: create_base_if_not_exists ──▶ 创建/查找多维表格
+    │
+    ▼
+Step 2/6: create_table_if_not_exists ──▶ 创建/查找数据表
+    │
+    ▼
+Step 3/6: sync_fields ──▶ 同步字段（动态创建新字段）
+    │
+    ▼
+Step 4/6: delete_today_records ──▶ 删除当天旧记录
+    │
+    ▼
+Step 5/6: upload_records ──▶ 批量上传新记录
+    │
+    ▼
+Step 6/6: output_url ──▶ 输出表格链接
+```
+
+**输出**：
+- 标准输出重定向到 `/tmp/afinfo-base_url.txt`
+- 供 `final_report` 步骤使用
+
+---
+
+### Step 6: `final_report`
 
 **功能**：输出工作流完成报告
 
 **调用命令**：
 ```bash
-echo "AI前沿早报发布完成！日期：${DATE}，文档链接：${DOC_URL}"
+bash -c 'echo "✅ 完成！\n📄 文档：$(cat /tmp/afinfo-doc_url.txt)\n📊 表格：$(cat /tmp/afinfo-base_url.txt)"'
 ```
 
 ---
@@ -198,19 +243,34 @@ RSS 源列表
     ├─────────────────────────────────┤
     ▼                                 ▼
 ┌──────────────┐              ┌────────────┐
-│render_wechat │              │ push2group │
+│render_wechat │              │ publish2lark│
 │.sh           │              │ .py        │
-│              │◀─────────────┤            │
-│→ 微信格式    │  summary.json │            │
+│              │              │            │
+│→ 微信格式    │              │→ 飞书文档   │
 └──────────────┘              └──────┬─────┘
     │                               │
-    ▼                               ▼
-┌──────────────┐              ┌────────────┐
-│publish2lark  │              │ final_     │
-│.py           │              │ report     │
-│              │              │            │
-│→ 飞书文档    │              │            │
-└──────────────┘              └────────────┘
+    │                               ▼
+    │                        ┌────────────┐
+    │                        │ push2group │
+    │                        │ .py        │
+    │                        │            │
+    │                        │→ 群消息卡片 │
+    │                        └──────┬─────┘
+    │                               │
+    │                               ▼
+    │                        ┌─────────────────┐
+    │                        │publish2lark_base│
+    │                        │ .py             │
+    │                        │                 │
+    │                        │→ 多维表格记录    │
+    │                        └─────────────────┘
+    │
+    ▼
+┌──────────────┐
+│final_report  │
+│              │
+│→ 完成报告    │
+└──────────────┘
 ```
 
 ---
@@ -219,8 +279,15 @@ RSS 源列表
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `DATE` | 早报日期 | `$(date +%Y-%m-%d)` |
-| `DOC_URL` | 文档链接 | `$publish2lark.stdout` |
+| `SKILL_DIR` | 项目根目录 | `ai-frontier-daily` |
+| `args.date` | 早报日期参数 | `$(date +%Y-%m-%d)` |
+
+**中间文件传递**：
+
+| 文件 | 生产者 | 消费者 | 说明 |
+|------|--------|--------|------|
+| `/tmp/afinfo-doc_url.txt` | `publish2lark` | `push2group`, `final_report` | 飞书文档 URL |
+| `/tmp/afinfo-base_url.txt` | `publish2lark_base` | `final_report` | 多维表格 URL |
 
 ---
 
@@ -243,22 +310,32 @@ RSS 源列表
 ```
 ai-frontier-daily/
 ├── scripts/
-│   ├── news_frontier.py      # 主流水线入口
-│   ├── render_wechat.sh      # 微信格式渲染脚本
-│   ├── publish2lark.py       # 飞书发布脚本
-│   └── push2group.py         # 群机器人推送
+│   ├── base/
+│   │   ├── init_env.sh      # 环境初始化（首次使用运行）
+│   │   └── run.sh           # 环境启动器（cd + venv + SSL + exec 透传）
+│   ├── news_frontier.py     # 主流水线入口
+│   ├── render_wechat.sh     # 微信格式渲染脚本
+│   ├── publish2lark.py      # 飞书发布脚本
+│   ├── publish2lark_base.py # 多维表格更新脚本
+│   └── push2group.py        # 群机器人推送
 ├── project-space/            # 核心模块
 │   ├── ingest.py
 │   ├── filter_rank.py
 │   ├── summarize.py
 │   ├── assemble.py
 │   └── utils/
+│       ├── lark_commander.py # Lark 命令封装
+│       ├── logger.py         # 统一日志
+│       └── ...
 ├── output/
 │   └── {DATE}/
 │       ├── briefing.md        # 早报终稿
 │       ├── summary.json       # LLM 摘要
 │       ├── filtered_ranked.json
 │       └── ingested.jsonl
+├── references/
+│   ├── ai-frontier-daily.example.lobster  # 工作流模板
+│   └── PIPELINE.md           # 本文档
 └── config/
     └── secrets.json          # 敏感配置
 ```

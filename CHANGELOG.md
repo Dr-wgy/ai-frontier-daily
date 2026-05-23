@@ -1,5 +1,50 @@
 ## 变更日志
 
+### 2026-05-23 (commit: -)，作者：wghlmg1210
+
+#### 研发工程
+
+##### 1. SummaryCluster 归置到 domain.py
+
+- **domain** - 新增 SummaryCluster 模型（从 summarize.py 迁移）
+
+##### 2. Logger 工具化改造
+
+- **logger** - 新增统一日志模块，路径统一为 `output/{date}/run.log`
+- **work_module** - 简化基类，移除 `self.log()` 方法
+- **llm_client** - 日志改用统一 logger
+- **news_frontier、ingest、filter_rank、summarize、assemble** - print 全部替换为 logger
+
+##### 3. 抽象 LarkCommander 命令执行器
+
+- **lark_commander** - 新增 Lark 命令链式调用封装，覆盖 Wiki/Base/Docs/IM
+- **publish2lark、publish2lark_base、push2group** - 重构为 LarkCmd 链式调用
+
+##### 4. 提示词元信息简化
+
+- **filter_rank、summarize** - 提示词简化（移除 url/update_time 等冗余字段）
+
+##### 5. .lobster 工作流配置优化
+
+- **run.sh** - 新增环境启动脚本（cd + venv + SSL + exec 透传）
+
+##### 6. 脚本路径调整
+
+- **init_env.sh** - 路径调整至 `scripts/base/`
+
+#### Skill 框架
+
+##### 5. .lobster 工作流配置优化
+
+- **ai-frontier-daily.example.lobster** - 工作流配置优化（SKILL_DIR 环境变量、args.date 全局参数、cleanup step、文件传递）
+
+##### 6. 文档同步
+
+- **PIPELINE.md** - 文档同步更新（补充 cleanup/publish2lark_base 步骤）
+- **SKILL.md** - 路径引用更新
+
+---
+
 ### 2026-05-21 (commit: -)，作者：wghlmg1210
 
 #### 研发工程
