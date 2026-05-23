@@ -73,12 +73,18 @@ class LarkBasePublisher:
             return self.base_token
         
         self.logger.info("=== 查找已存在的'AI前沿早报数据库' ===")
-        result = LarkCmd.BASE_SEARCH.args(keyword='AI前沿早报数据库').run(logger=self.logger)
+        result = LarkCmd.DOCS_SEARCH_BITABLE.args(keyword='AI前沿早报数据库').run(logger=self.logger)
         
         if result:
-            self.base_token = result
-            self.logger.info(f"找到已存在的多维表格: {self.base_token}")
-            return self.base_token
+            try:
+                items = json.loads(result)
+                if items and len(items) > 0:
+                    self.base_token = items[0].get('result_meta', {}).get('token', '')
+                    if self.base_token:
+                        self.logger.info(f"找到已存在的多维表格: {self.base_token}")
+                        return self.base_token
+            except json.JSONDecodeError as e:
+                self.logger.warning(f"解析搜索结果失败: {e}")
         
         self.logger.info("=== 创建新的多维表格 ===")
         result = LarkCmd.BASE_CREATE.args(name='AI前沿早报数据库', timezone='Asia/Shanghai').run(logger=self.logger)
