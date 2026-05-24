@@ -4,6 +4,18 @@
 
 #### 研发工程
 
+##### 1. 内化微信渲染（移除render_wechat外部依赖）
+- 【移除事项】配置 & 工作流 & 说明文档：相应更新
+  - secrets.example.json、ai-frontier-daily.example.lobster、PIPELINE.md
+- 【内化事项】新增HTML模版 & 集成至 assemble 中
+  - briefing-template-bold-navy.html.j2、assemble.py
+
+---
+
+### 2026-05-24 (commit: 35b3f7f)，作者：wghlmg1210
+
+#### 研发工程
+
 ##### 1. SummaryCluster 自管理属性，解除对 NewsCluster 强依赖
 
 - **domain** - SummaryCluster 移除 cluster 嵌套，改为自管理全部字段
@@ -24,7 +36,7 @@
 
 ---
 
-### 2026-05-23 (commit: -)，作者：wghlmg1210
+### 2026-05-23 (commit: 2d160f7)，作者：wghlmg1210
 
 #### 研发工程
 

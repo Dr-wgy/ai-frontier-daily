@@ -13,6 +13,7 @@ SECRETS_JSON = PROJECT_ROOT / 'config' / 'secrets.json'
 CONFIG_DIR = _PROJECT_SPACE / 'config'
 CONFIG_YAML = CONFIG_DIR / 'config.yaml'
 TEMPLATE_BRIEFING = CONFIG_DIR / 'briefing-template.md.j2'
+TEMPLATE_BRIEFING_HTML = CONFIG_DIR / 'briefing-template-bold-navy.html.j2'
 
 # --- 模板文件名称 ---
 PROMPTS_DIR = _PROJECT_SPACE / 'prompts'
@@ -25,6 +26,7 @@ FN_INGESTED = 'ingested.jsonl'
 FN_FILTERED_RANKED = 'filtered_ranked.json'
 FN_SUMMARY = 'summary.json'
 FN_BRIEFING = 'briefing.md'
+FN_BRIEFING_HTML = 'briefing.html'
 
 # ----------------------------------------------------------------------------
 
