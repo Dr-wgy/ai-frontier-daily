@@ -1,0 +1,84 @@
+{# AI 前沿早报 HTML 渲染模板 — wechat-inline 主题（纯内联样式，公众号兼容） #}
+
+{%- macro tag_span(label, color, extra_style='') -%}
+{%- if color == 'blue' -%}
+<span style="box-sizing:border-box;display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:500;letter-spacing:0.02em;white-space:nowrap;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;{{ extra_style }}"><span leaf="" style="box-sizing:border-box;">#{{ label }}</span></span>
+{%- elif color == 'green' -%}
+<span style="box-sizing:border-box;display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:500;letter-spacing:0.02em;white-space:nowrap;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;{{ extra_style }}"><span leaf="" style="box-sizing:border-box;">#{{ label }}</span></span>
+{%- else -%}
+<span style="box-sizing:border-box;display:inline-flex;align-items:center;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:500;letter-spacing:0.02em;white-space:nowrap;background:#f8fafc;color:#475569;border:1px solid #e2e8f0;{{ extra_style }}"><span leaf="" style="box-sizing:border-box;">#{{ label }}</span></span>
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro news_card(it) -%}
+<section style="box-sizing:border-box;background:#ffffff;border-radius:16px;padding:24px;margin-bottom:16px;border:1px solid #e2e8f0;">
+  <section style="box-sizing:border-box;display:flex;align-items:center;margin-bottom:14px;">
+    <section style="box-sizing:border-box;display:flex;flex-wrap:wrap;align-items:center;flex:1;">
+      {%- for tag in it.vertical_tags -%}
+      {{ tag_span(tag, loop.cycle('blue', 'green', 'gray'), 'margin-right:5px;' if not loop.last else '') }}
+      {%- endfor -%}
+    </section>
+    <span style="box-sizing:border-box;color:#cbd5e1;font-size:14px;font-weight:300;text-align:center;padding:0 8px;margin: 0 -10px;"><span leaf="" style="box-sizing:border-box;">｜</span></span>
+    <section style="box-sizing:border-box;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;flex:1;">
+      {%- for tag in it.general_tags -%}
+      {{ tag_span(tag, loop.cycle('blue', 'green', 'gray'), 'margin-left:5px;' if not loop.first else '') }}
+      {%- endfor -%}
+    </section>
+  </section>
+  <h3 style="box-sizing:border-box;font-size:18px;font-weight:700;line-height:28px;color:#0f172a;margin-bottom:12px;letter-spacing:-0.3px;"><span leaf="" style="box-sizing:border-box;">{{ it.headline }}</span>{% if it.hot %}<span style="box-sizing:border-box;font-size:16px;margin-left:6px;"><span leaf="" style="box-sizing:border-box;">{{ it.hot }}</span></span>{% endif %}</h3>
+  <section style="box-sizing:border-box;font-size:14px;line-height:24px;color:#475569;margin-bottom:18px;"><span leaf="" style="box-sizing:border-box;">{{ it.summary }}</span></section>
+  <section style="box-sizing:border-box;background:#f8fafb;border:1px solid #e8edf2;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+    <section style="box-sizing:border-box;font-size:12px;font-weight:600;color:#64748b;margin-bottom:5px;"><span leaf="" style="box-sizing:border-box;">☁️ 白话版</span></section>
+    <section style="box-sizing:border-box;font-size:13px;line-height:22px;color:#64748b;"><span leaf="" style="box-sizing:border-box;">{{ it.plain_explain }}</span></section>
+  </section>
+  <section style="box-sizing:border-box;border-left:2px solid #cbd5e1;padding:8px 12px;border-radius:0 6px 6px 0;background:#fafbfc;">
+    <section style="box-sizing:border-box;font-size:11px;font-weight:600;color:#94a3b8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.04em;"><span leaf="" style="box-sizing:border-box;">💡 影响</span></section>
+    <section style="box-sizing:border-box;font-size:12px;line-height:20px;color:#78716c;"><span leaf="" style="box-sizing:border-box;">{% set imp_list = it.impacts if it.impacts is iterable and it.impacts is not string else [] %}{% if imp_list %}{% for imp in imp_list %}{{ imp }}{% if not loop.last %} / {% endif %}{% endfor %}{% else %}暂无{% endif %}</span></section>
+  </section>
+</section>
+{%- endmacro -%}
+
+<section style="box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;color:#1e293b;">
+
+  <section style="box-sizing:border-box;max-width:700px;margin:0 auto;padding:32px 24px 64px;">
+
+    <section style="box-sizing:border-box;background:#ffffff;border-radius:20px;padding:28px 28px 20px;margin-bottom:40px;border:1px solid #e2e8f0;">
+      <h2 style="box-sizing:border-box;font-size:20px;font-weight:700;color:#0f172a;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #f1f5f9;"><span leaf="" style="box-sizing:border-box;">⚡ 今日速览</span></h2>
+      {%- if footer.mode == 'blocks' %}
+      {%- for row in footer.rows %}
+      <section style="box-sizing:border-box;display:flex;align-items:flex-start;padding:14px 0;{% if not loop.last %}border-bottom:1px solid #f1f5f9;{% endif %}">
+        <section style="box-sizing:border-box;font-size:20px;flex-shrink:0;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:10px;margin-right:14px;"><span leaf="" style="box-sizing:border-box;">{{ loop.cycle('🔧', '🧠', '🤖', '📱', '📊') }}</span></section>
+        <section style="box-sizing:border-box;flex:1;min-width:0;">
+          <section style="box-sizing:border-box;font-size:13px;font-weight:700;color:#334155;margin-bottom:4px;letter-spacing:0.02em;"><span leaf="" style="box-sizing:border-box;">{{ row.abbrev }}</span></section>
+          <section style="box-sizing:border-box;font-size:13px;color:#64748b;line-height:20px;"><span leaf="" style="box-sizing:border-box;">{{ row.lines | join('') }}</span></section>
+        </section>
+      </section>
+      {%- endfor %}
+      {%- else %}
+      {%- for line in footer.fallback_lines %}
+      <section style="box-sizing:border-box;font-size:13px;color:#64748b;line-height:20px;padding:8px 0;border-bottom:1px solid #f1f5f9;"><span leaf="" style="box-sizing:border-box;">{{ line }}</span></section>
+      {%- endfor %}
+      {%- endif %}
+    </section>
+
+    {%- for section in sections %}
+    {%- if not section.empty %}
+    <section style="box-sizing:border-box;margin-bottom:40px;">
+      <section style="box-sizing:border-box;display:flex;align-items:center;margin-bottom:20px;padding:0 4px;">
+        <span style="box-sizing:border-box;font-size:28px;font-weight:800;color:#e2e8f0;font-family:'Georgia',serif;line-height:1;margin-right:12px;"><span leaf="" style="box-sizing:border-box;">{{ '%02d' % loop.index }}</span></span>
+        <h2 style="box-sizing:border-box;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.3px;"><span leaf="" style="box-sizing:border-box;">{{ section.heading }}</span></h2>
+      </section>
+      {%- for it in section.entries %}
+      {{ news_card(it) }}
+      {%- endfor %}
+    </section>
+    {%- endif %}
+    {%- endfor %}
+
+    <section style="box-sizing:border-box;text-align:center;padding:32px 0 0;border-top:1px solid #e2e8f0;margin-top:20px;">
+      <section style="box-sizing:border-box;font-size:13px;color:#94a3b8;font-weight:500;"><span leaf="" style="box-sizing:border-box;">AI 前沿早报 · 每日精选 · {{ header.date_str }}</span></section>
+    </section>
+
+  </section>
+
+</section>

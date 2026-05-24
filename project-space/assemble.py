@@ -97,7 +97,7 @@ class AssembleModule(WorkModule):
                 else:
                     self.logger.debug(f"[过滤] [{m.name}] 标题: {sc.title[:50]}... 原因: plain_explain={has_plain}, impacts={has_impacts}")
             entries = [self._news_row(f"{i}.{j+1}", sc, cap) for j, sc in enumerate(summary_items)]
-            sections.append({'heading': f"## {cn}、{m.name}\n", 'empty': not summary_items, 'entries': entries})
+            sections.append({'heading': f"{cn}、{m.name}", 'empty': not summary_items, 'entries': entries})
 
         footer_data = blocks.get('footer', {})
         footer_rows = []

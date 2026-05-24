@@ -433,19 +433,19 @@
   ```bash
   #!/bin/bash
   # 路径: $HOME/.qclaw/skills/ai-frontier-daily/run.sh
-
+  
   # 1. 切换到项目根目录
   cd "$(dirname "$0")" || exit
-
+  
   # 2. 激活虚拟环境 (如果存在)
   if [ -f ".venv/bin/activate" ]; then
       source .venv/bin/activate
   fi
-
+  
   # 3. 注入 SSL 证书环境变量
   export SSL_CERT_FILE=$(python -c "import certifi;print(certifi.where())" 2>/dev/null)
   export REQUESTS_CA_BUNDLE=$SSL_CERT_FILE
-
+  
   # 4. 透传并执行传入的任意命令
   exec "$@"
   ```
@@ -454,40 +454,40 @@
   ```yaml
   name: ai-frontier-daily
   description: AI前沿早报工作流 (路径安全版)
-
+  
   args:
     date:
       default: $(date +%Y-%m-%d)
-
+  
   env:
     # 核心：定义项目根目录，消灭相对路径不确定性
     SKILL_DIR: $HOME/.qclaw/skills/ai-frontier-daily
-
+  
   steps:
     # 0. 清理临时文件 (保障每次运行环境干净)
     - id: cleanup
       command: bash -c 'mkdir -p $SKILL_DIR/tmp && rm -f /tmp/afinfo-*.txt'
-
+  
     # 1. 新闻采集
     - id: news_frontier
       command: $SKILL_DIR/scripts/bin/run.sh python scripts/news_frontier.py --date $args.date
-
+  
     # 2. 微信图文渲染
     - id: render_wechat
       command: $SKILL_DIR/scripts/bin/run.sh bash scripts/render_wechat.sh $args.date
-
+  
     # 3. 发布飞书文档 (重定向到绝对路径下的 tmp 目录)
     - id: publish2lark
       command: bash -c '$SKILL_DIR/scripts/bin/run.sh python scripts/publish2lark.py --date $args.date > /tmp/afinfo-doc_url.txt'
-
+  
     # 4. 推送飞书群 (从绝对路径读取文件)
     - id: push2group
       command: bash -c 'DOC_URL=$(cat /tmp/afinfo-doc_url.txt) && $SKILL_DIR/scripts/bin/run.sh python scripts/push2group.py --date $args.date --doc-url "$DOC_URL"'
-
+  
     # 5. 更新多维表格
     - id: publish2lark_base
       command: bash -c '$SKILL_DIR/scripts/bin/run.sh python scripts/publish2lark_base.py --date $args.date > /tmp/afinfo-base_url.txt'
-
+  
     # 6. 最终报告
     - id: final_report
       command: bash -c 'echo "✅ 完成！\n📄 文档：$(cat $SKILL_DIR/tmp/afinfo-doc_url.txt)\n📊 表格：$(cat $SKILL_DIR/tmp/afinfo-base_url.txt)"'
