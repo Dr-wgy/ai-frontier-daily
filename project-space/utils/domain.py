@@ -6,16 +6,16 @@ domain — AI-Froniteer-Daily 数据模型层
         ↓
     filtered_ranked.json (筛选+分类+排序)
         ↓
-    summary.json (LLM摘要增强)
+    summary.json (LLM摘要增强，集群模式)
         ↓
     briefing.md (最终简报)
 
-继承关系：
-    NewsItem (基类) → FilteredItem → SummaryItem
+核心类：
+    NewsItem → FilteredItem → NewsCluster → SummaryCluster
 """
 
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any
 
 
 @dataclass(frozen=True)
@@ -125,106 +125,6 @@ class FilteredItem(NewsItem):
 
 
 @dataclass(frozen=True)
-class SummaryItem(FilteredItem):
-    """LLM 摘要增强后的新闻条目"""
-    headline: str = ''
-    plain_explain: str = ''
-    impacts: List[str] = field(default_factory=list)
-    digest_for_outline: str = ''
-    vertical_tags: List[str] = field(default_factory=list)
-    general_tags: List[str] = field(default_factory=list)
-    hot: str = ''
-
-    @staticmethod
-    def extract_articles(data: dict) -> tuple:
-        """从 LLM 响应中提取 articles 和 drop_indices"""
-        if not isinstance(data, dict):
-            return {}, set()
-
-        by_source = {}
-        for a in data.get('articles', []):
-            if not isinstance(a, dict):
-                continue
-            si = a.get('source_index')
-            if si is None:
-                continue
-            try:
-                by_source[int(si)] = a
-            except (ValueError, TypeError):
-                continue
-
-        drop = set()
-        for x in data.get('deduplication', {}).get('drop_indices', []):
-            try:
-                drop.add(int(x))
-            except (ValueError, TypeError):
-                continue
-
-        return by_source, drop
-
-    @classmethod
-    def from_filtered_and_llm(cls, filtered_item: FilteredItem, llm_data: dict) -> 'SummaryItem':
-        """从 FilteredItem 和 LLM 数据创建 SummaryItem"""
-        vertical_tags = llm_data.get('vertical_tags', [])
-        if isinstance(vertical_tags, str):
-            vertical_tags = [vertical_tags] if vertical_tags else []
-        general_tags = llm_data.get('general_tags', [])
-        if isinstance(general_tags, str):
-            general_tags = [general_tags] if general_tags else []
-
-        return cls(
-            title=filtered_item.title,
-            url=filtered_item.url,
-            source=filtered_item.source,
-            summary=filtered_item.summary,
-            pub_time=filtered_item.pub_time,
-            _feed_url=filtered_item._feed_url,
-            main_section=filtered_item.main_section,
-            sub_section=filtered_item.sub_section,
-            relevance=filtered_item.relevance,
-            hot_level=filtered_item.hot_level,
-            rank=filtered_item.rank,
-            headline=llm_data.get('headline', ''),
-            plain_explain=llm_data.get('plain_explain', ''),
-            impacts=llm_data.get('impacts', []) if isinstance(llm_data.get('impacts'), list) else [],
-            digest_for_outline=llm_data.get('digest_for_outline', ''),
-            vertical_tags=vertical_tags,
-            general_tags=general_tags,
-            hot=llm_data.get('hot', ''),
-        )
-
-    @staticmethod
-    def from_dict(d: dict) -> 'SummaryItem':
-        vertical_tags = d.get('vertical_tags', [])
-        if isinstance(vertical_tags, str):
-            vertical_tags = [vertical_tags] if vertical_tags else []
-        general_tags = d.get('general_tags', [])
-        if isinstance(general_tags, str):
-            general_tags = [general_tags] if general_tags else []
-
-        return SummaryItem(
-            title=d.get('title', ''),
-            url=d.get('url', ''),
-            source=d.get('source', ''),
-            summary=d.get('summary', ''),
-            pub_time=d.get('pub_time', ''),
-            _feed_url=d.get('_feed_url', ''),
-            main_section=d.get('main_section', ''),
-            sub_section=d.get('sub_section', ''),
-            relevance=float(d.get('relevance', 0)),
-            hot_level=float(d.get('hot_level', 0)),
-            rank=int(d.get('rank', 0)),
-            headline=d.get('headline', ''),
-            plain_explain=d.get('plain_explain', ''),
-            impacts=d.get('impacts', []) if isinstance(d.get('impacts'), list) else [],
-            digest_for_outline=d.get('digest_for_outline', ''),
-            vertical_tags=vertical_tags,
-            general_tags=general_tags,
-            hot=d.get('hot', ''),
-        )
-
-
-@dataclass(frozen=True)
 class NewsCluster:
     """新闻集群（基于关键词聚合的新闻集）"""
     cluster_id: str
@@ -242,6 +142,20 @@ class NewsCluster:
         if not self.items:
             return ''
         return max(self.items, key=lambda x: x.relevance).title
+
+    @property
+    def url(self) -> List[str]:
+        """集群URL（取最相关新闻的URL）"""
+        if not self.items:
+            return ''
+        return max(self.items, key=lambda x: x.relevance).url
+
+    @property
+    def source(self) -> List[str]:
+        """集群来源（取最相关新闻的来源）"""
+        if not self.items:
+            return ''
+        return max(self.items, key=lambda x: x.relevance).source
 
     @property
     def urls(self) -> List[str]:
@@ -278,9 +192,20 @@ class NewsCluster:
 
 @dataclass(frozen=True)
 class SummaryCluster:
-    """摘要后的新闻集群（封装 NewsCluster + LLM 返回数据）"""
-    cluster: 'NewsCluster'
+    """摘要后的新闻集群（自管理所有属性，不依赖 NewsCluster）"""
+    cluster_id: str = ''
     cluster_index: int = 0
+    keywords: list = field(default_factory=list)
+    items: list = field(default_factory=list)
+    title: str = ''
+    url: str = ''
+    source: str = ''
+    urls: list = field(default_factory=list)
+    sources: list = field(default_factory=list)
+    summary: str = ''
+    relevance: float = 0.0
+    hot_level: float = 0.0
+    rank: int = 0
     headline: str = ''
     plain_explain: str = ''
     impacts: list = field(default_factory=list)
@@ -291,68 +216,77 @@ class SummaryCluster:
     general_tags: list = field(default_factory=list)
     hot: str = ''
 
-    def __init__(self, cluster: 'NewsCluster', llm_data: dict):
-        # 使用 object.__setattr__ 绕过 frozen dataclass 限制
-        object.__setattr__(self, 'cluster', cluster)
-        object.__setattr__(self, 'cluster_index', llm_data.get('cluster_index', 0))
-        object.__setattr__(self, 'headline', llm_data.get('headline', ''))
-        object.__setattr__(self, 'plain_explain', llm_data.get('plain_explain', ''))
-        object.__setattr__(self, 'impacts', llm_data.get('impacts', []) if isinstance(llm_data.get('impacts'), list) else [])
-        object.__setattr__(self, 'digest_for_outline', llm_data.get('digest_for_outline', ''))
-        object.__setattr__(self, 'main_section', llm_data.get('main_section', cluster.main_section))
-        object.__setattr__(self, 'sub_section', llm_data.get('sub_section', cluster.sub_section))
-        object.__setattr__(self, 'vertical_tags', llm_data.get('vertical_tags', []) if isinstance(llm_data.get('vertical_tags'), list) else [])
-        object.__setattr__(self, 'general_tags', llm_data.get('general_tags', []) if isinstance(llm_data.get('general_tags'), list) else [])
-        object.__setattr__(self, 'hot', llm_data.get('hot', ''))
+    @classmethod
+    def from_cluster_and_llm(cls, cluster: 'NewsCluster', llm_data: dict) -> 'SummaryCluster':
+        """从 NewsCluster 和 LLM 数据构建 SummaryCluster（仅用于构建）"""
+        return cls(
+            cluster_id=cluster.cluster_id,
+            cluster_index=llm_data.get('cluster_index', 0),
+            keywords=cluster.keywords,
+            items=cluster.items,
+            title=cluster.title,
+            url=cluster.url,
+            source=cluster.source,
+            urls=cluster.urls,
+            sources=cluster.sources,
+            summary=cluster.merged_summary,
+            relevance=cluster.merged_relevance,
+            hot_level=cluster.merged_hot_level,
+            rank=cluster.rank,
+            headline=llm_data.get('headline', ''),
+            plain_explain=llm_data.get('plain_explain', ''),
+            impacts=llm_data.get('impacts', []) if isinstance(llm_data.get('impacts'), list) else [],
+            digest_for_outline=llm_data.get('digest_for_outline', ''),
+            main_section=llm_data.get('main_section', cluster.main_section),
+            sub_section=llm_data.get('sub_section', cluster.sub_section),
+            vertical_tags=llm_data.get('vertical_tags', []) if isinstance(llm_data.get('vertical_tags'), list) else [],
+            general_tags=llm_data.get('general_tags', []) if isinstance(llm_data.get('general_tags'), list) else [],
+            hot=llm_data.get('hot', ''),
+        )
 
-    @property
-    def cluster_id(self) -> str:
-        return self.cluster.cluster_id
-
-    @property
-    def keywords(self) -> list:
-        return self.cluster.keywords
-
-    @property
-    def items(self) -> list:
-        return self.cluster.items
-
-    @property
-    def title(self) -> str:
-        return self.cluster.title
-
-    @property
-    def urls(self) -> list:
-        return self.cluster.urls
-
-    @property
-    def sources(self) -> list:
-        return self.cluster.sources
+    @classmethod
+    def from_dict(cls, d: dict) -> 'SummaryCluster':
+        """从字典创建 SummaryCluster"""
+        return cls(
+            cluster_id=d.get('cluster_id', ''),
+            cluster_index=d.get('cluster_index', 0),
+            keywords=d.get('keywords', []),
+            items=d.get('items', []),
+            title=d.get('title', ''),
+            url=d.get('url', ''),
+            source=d.get('source', ''),
+            urls=d.get('urls', []),
+            sources=d.get('sources', []),
+            summary=d.get('summary', ''),
+            relevance=float(d.get('relevance', 0)),
+            hot_level=float(d.get('hot_level', 0)),
+            rank=int(d.get('rank', 0)),
+            headline=d.get('headline', ''),
+            plain_explain=d.get('plain_explain', ''),
+            impacts=d.get('impacts', []) if isinstance(d.get('impacts'), list) else [],
+            digest_for_outline=d.get('digest_for_outline', ''),
+            main_section=d.get('main_section', ''),
+            sub_section=d.get('sub_section', ''),
+            vertical_tags=d.get('vertical_tags', []) if isinstance(d.get('vertical_tags'), list) else [],
+            general_tags=d.get('general_tags', []) if isinstance(d.get('general_tags'), list) else [],
+            hot=d.get('hot', ''),
+        )
 
     def to_dict(self) -> dict:
         return {
-            'cluster_id': self.cluster_id,
-            'cluster_index': self.cluster_index,
-            'urls': self.urls,
-            'sources': self.sources,
-
-            'headline': self.headline,
-            'title': self.title,
+            'cluster_id': self.cluster_id, 'cluster_index': self.cluster_index,
+            'urls': self.urls, 'sources': self.sources,
+            'title': self.title, 'url': self.url, 'source': self.source,
+            'summary': self.summary,
+            'headline': self.headline, 'hot': self.hot,
+            'main_section': self.main_section, 'sub_section': self.sub_section,
+            'vertical_tags': self.vertical_tags, 'general_tags': self.general_tags,
             'digest_for_outline': self.digest_for_outline,
             'plain_explain': self.plain_explain,
-            'summary': self.cluster.merged_summary,
             'impacts': self.impacts,
             'keywords': self.keywords,
-
-            'relevance': self.cluster.merged_relevance,
-            'hot_level': self.cluster.merged_hot_level,
-
-            'main_section': self.main_section,
-            'sub_section': self.sub_section,
-            'vertical_tags': self.vertical_tags,
-            'general_tags': self.general_tags,
-            'hot': self.hot,
-            'rank': self.cluster.rank
+            'relevance': self.relevance, 'hot_level': self.hot_level,
+            'rank': self.rank
         }
 
 
@@ -388,23 +322,3 @@ class FilterStats:
             'top_topics': self.top_topics,
         }
 
-
-@dataclass(frozen=True)
-class BriefingMeta:
-    """简报元数据（头部+底部+数据项）"""
-    items: List[SummaryItem] = field(default_factory=list)
-    tags_full: str = '#AI早报'
-    data_sources: str = '多家媒体'
-    footer: dict = field(default_factory=dict)
-
-    @staticmethod
-    def from_dict(d: dict) -> 'BriefingMeta':
-        items, blocks = d.get('items', []), d.get('blocks', {})
-        header = blocks.get('header', {})
-        items = [SummaryItem.from_dict(it) for it in items]
-        return BriefingMeta(
-            items=items,
-            tags_full=header.get('tags_full', '#AI早报'),
-            data_sources=header.get('data_sources', '多家媒体'),
-            footer=blocks.get('footer', {})
-        )

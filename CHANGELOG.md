@@ -1,5 +1,29 @@
 ## 变更日志
 
+### 2026-05-24 (commit: -)，作者：wghlmg1210
+
+#### 研发工程
+
+##### 1. SummaryCluster 自管理属性，解除对 NewsCluster 强依赖
+
+- **domain** - SummaryCluster 移除 cluster 嵌套，改为自管理全部字段
+- **summarize、assemble** - 构建/加载改用工厂方法
+
+##### 2. 渲染层改用 SummaryCluster，移除旧版兼容
+
+- **assemble** - 删除旧版 items 兼容代码，全链路使用 SummaryCluster
+
+##### 3. 删除 SummaryItem 和 BriefingMeta
+
+- **domain** - 删除旧版模型类，清理未用导入
+- **__init__** - 更新导出列表
+
+##### 4. 模板空行优化
+
+- **briefing-template** - Jinja2 空格控制语法剔除渲染后多余空行
+
+---
+
 ### 2026-05-23 (commit: -)，作者：wghlmg1210
 
 #### 研发工程

@@ -23,9 +23,9 @@ from utils.prompt_loader import PromptLoader, TemplateRenderer
 from utils.domain import (
     NewsItem,
     FilteredItem,
-    SummaryItem,
+    NewsCluster,
+    SummaryCluster,
     FilterStats,
-    BriefingMeta,
 )
 from utils.lark_commander import LarkCmd
 
@@ -50,8 +50,8 @@ __all__ = [
     "TemplateRenderer",
     "NewsItem",
     "FilteredItem",
-    "SummaryItem",
+    "NewsCluster",
+    "SummaryCluster",
     "FilterStats",
-    "BriefingMeta",
     "LarkCmd",
 ]

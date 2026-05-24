@@ -130,7 +130,7 @@ class SummarizeModule(WorkModule):
                 continue
             
             llm_data = by_cluster.get(i, {})
-            summary_cluster = SummaryCluster(cluster, llm_data)
+            summary_cluster = SummaryCluster.from_cluster_and_llm(cluster, llm_data)
             out_clusters.append(summary_cluster)
 
         # 保存输出

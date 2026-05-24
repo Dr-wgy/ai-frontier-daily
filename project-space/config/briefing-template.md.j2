@@ -1,10 +1,10 @@
 {# AI 前沿早报渲染模板 — 版式与固定文案在此维护；业务数据由 assemble 脚本注入。 #}
 {% macro news_item(it) -%}
 ### {{ it.number }}. {{ it.headline }} {% if it.hot %}{{ it.hot }}{% endif %}
-
 > **【垂类标签】**： {% if it.vertical_tags %}{% for tag in it.vertical_tags %}#{{ tag }}{% if not loop.last %} {% endif %}{% endfor %}{% else %}无{% endif %}
+> 
 > **【通用标签】**： {% if it.general_tags %}{% for tag in it.general_tags %}#{{ tag }}{% if not loop.last %} {% endif %}{% endfor %}{% else %}无{% endif %}
-
+> 
 > **【原文链接】**： [{{ it.link_label }}]({{ it.url }})
 
 📋 **【概要】：** {{ it.summary }}
@@ -14,42 +14,37 @@
 🎯 **【影响】：** {% set imp_list = it.impacts if it.impacts is iterable and it.impacts is not string else [] %}{% if imp_list %}{% for imp in imp_list %}{{ imp }}{% if not loop.last %} / {% endif %}{% endfor %}{% else %}暂无{% endif %}
 
 ---
-{% endmacro %}
+{% endmacro -%}
 
-{% if footer.mode == 'blocks' %}
+{%- if footer.mode == 'blocks' %}
 ### 🚀 今日速览（一句话版）
-{% for row in footer.rows %}
+{% for row in footer.rows -%}
 - {{ row.abbrev }}： {{ row.lines[0] }}{% for line in row.lines[1:] %}{{ line }}{% endfor %}
 {% endfor %}
-
-{% else %}
-
-{% for line in footer.fallback_lines %}
+{% else -%}
+{% for line in footer.fallback_lines -%}
 {{ line }}
 {% endfor %}
-{% endif %}
+{% endif -%}
 
 ---
 
-{% for section in sections %}
-{{ section.heading }}{% if section.empty %}
+{%- for section in sections %}
+{{ section.heading }}{% if section.empty -%}
 *今日暂无相关报道*
-
 ---
-{% else %}
-{% for it in section.entries %}
+{% else -%}
+{% for it in section.entries -%}
 {{ news_item(it) }}
 {% endfor %}
-{% endif %}
-{% endfor %}
-{% if unknown is defined and unknown.entries and unknown.entries|length > 0 %}
+{% endif -%}
+{% endfor -%}
+{%- if unknown is defined and unknown.entries and unknown.entries|length > 0 %}
 ## {{ sections|length + 1 }}、其他 · 未分类
-{% for it in unknown.entries %}
+{% for it in unknown.entries -%}
 {{ news_item(it) }}
 {% endfor %}
-{% endif %}
-
----
+{% endif -%}
 
 > **时间：** {{ header.date_str }}
 >
