@@ -63,9 +63,21 @@ lobster({ filePath: "<skill-path>/references/ai-frontier-daily.lobster" })
 | 字段 | 说明 |
 |------|------|
 | `llm.api_key` | LLM API 认证 |
+| `feishu.app_id` | 飞书应用 App ID |
+| `feishu.app_secret` | 飞书应用 App Secret |
 | `feishu.bot_webhook` | 群机器人 Webhook |
 | `feishu.space_id` | 知识库 Space ID |
-| `feishu.root_parent_token` | 知识库根目录 Token |
+| `feishu.base_token` | 多维表格 Token（可选） |
+| `feishu.table_id` | 数据表 ID（可选） |
+| `feishu.chat_id` | 群聊 ID（可选） |
+
+**飞书应用权限要求**：
+- `wiki:wiki:readonly` - 获取知识库节点列表
+- `wiki:wiki` - 创建和移动知识库节点
+- `docx:document` - 创建和更新文档
+- `bitable:app` - 创建多维表格
+- `bitable:record` - 管理记录
+- `im:message` - 发送消息
 
 **业务配置**：`project-space/config/config.yaml`（可提交 Git）
 
