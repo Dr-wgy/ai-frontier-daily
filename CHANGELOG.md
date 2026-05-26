@@ -4,9 +4,9 @@
 
 #### 研发工程
 
-##### 1. 小红书截图功能接入（使用 agent-browser 实现截图自动化）
+##### 1. 小红书截图功能接入（使用 Chrome APP & CDP 实现截图自动化）
 
-- **screenshot-redbook.js** - 新增批量截图脚本；以 agent-browser 作为底层驱动实现自动化截图，同时沉淀 PRD 和截图流程设计文档
+- **screenshot-redbook-cdp.js** - 新增批量截图脚本；以 Chrome APP & CDP 作为底层驱动实现自动化截图，同时沉淀 PRD 和截图流程设计文档
 
 ##### 2. 早报输出拆分为三种格式（飞书 / 微信公众号 / 小红书）
 
