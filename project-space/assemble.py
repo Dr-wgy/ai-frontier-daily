@@ -8,9 +8,10 @@ assemble.py — 拼版渲染模块
 
 from __future__ import annotations
 import os
+import webbrowser
 from typing import Sequence, List
 
-from utils import AppConfig, TEMPLATE_BRIEFING, TEMPLATE_BRIEFING_HTML, TemplateRenderer, WorkModule
+from utils import AppConfig, TEMPLATE_BRIEFING, TEMPLATE_BRIEFING_WECHAT, TEMPLATE_BRIEFING_REDBOOK, FN_BRIEFING_FEISHU, FN_BRIEFING_WECHAT, FN_REDBOOK, TemplateRenderer, WorkModule
 from utils.domain import SummaryCluster
 
 _CN_NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
@@ -112,6 +113,36 @@ class AssembleModule(WorkModule):
             'footer': {'mode': 'blocks', 'rows': footer_rows}
         }
 
+    def _render_redbook_cards(self, clusters: List[SummaryCluster], footer: dict, output_dir: str) -> List[str]:
+        """小红书截图：生成 news card + quick-view card"""
+        cap = max(200, int(self.assembly_cfg.summary_max_chars))
+        cards_dir = os.path.join(output_dir, FN_REDBOOK)
+        os.makedirs(cards_dir, exist_ok=True)
+        paths = []
+
+        def _render(card_type: str, data: dict, filename: str) -> str:
+            html = self._renderer.render(TEMPLATE_BRIEFING_REDBOOK, {'card_type': card_type, 'data': data})
+            fpath = os.path.join(cards_dir, filename)
+            with open(fpath, 'w', encoding='utf-8') as f:
+                f.write(html)
+            paths.append(fpath)
+            return fpath
+
+        # quick-view card
+        _render('quick_view', footer, 'quick-view.html')
+
+        # news cards
+        for idx, sc in enumerate(clusters, 1):
+            if not sc.plain_explain and not sc.impacts:
+                continue
+            row = self._news_row(f"{idx}", sc, cap)
+            _render('news', row, f'card-{idx:03d}.html')
+
+        return paths
+
+    def _open_file(self, path: str):
+        webbrowser.open(f"file://{os.path.abspath(path)}")
+
     def run(self, input_file: str, output_file: str) -> dict:
         """执行完整流程"""
         clusters, blocks = self._load_clusters(input_file)
@@ -121,16 +152,33 @@ class AssembleModule(WorkModule):
             return {'path': output_file, 'count': 0}
 
         ctx = self._build_context(clusters, blocks)
-        renderer = TemplateRenderer()
-        md = renderer.render(TEMPLATE_BRIEFING, ctx)
-        html = renderer.render(TEMPLATE_BRIEFING_HTML, ctx)
+        self._renderer = TemplateRenderer()
 
-        os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
-        with open(output_file, 'w', encoding='utf-8') as f:
+        output_dir = os.path.dirname(output_file) or '.'
+        os.makedirs(output_dir, exist_ok=True)
+
+        # === 1. 飞书：Markdown 文件 ===
+        md = self._renderer.render(TEMPLATE_BRIEFING, ctx)
+        feishu_file = os.path.join(output_dir, FN_BRIEFING_FEISHU)
+        with open(feishu_file, 'w', encoding='utf-8') as f:
             f.write(md)
 
-        html_file = output_file.replace('.md', '.html')
-        with open(html_file, 'w', encoding='utf-8') as f:
+        # === 2. 微信：HTML 文件 ===
+        html = self._renderer.render(TEMPLATE_BRIEFING_WECHAT, ctx)
+        wechat_file = os.path.join(output_dir, FN_BRIEFING_WECHAT)
+        with open(wechat_file, 'w', encoding='utf-8') as f:
             f.write(html)
 
-        return {'path': output_file, 'html_path': html_file, 'count': len(clusters)}
+        # === 3. 小红书：目录（redbook/ 下多个 HTML） ===
+        redbook_paths = self._render_redbook_cards(clusters, ctx['footer'], output_dir)
+
+        ## 自动打开文件
+        self._open_file(wechat_file)
+
+        return {
+            'path': feishu_file,
+            'feishu_path': feishu_file,
+            'wechat_path': wechat_file,
+            'count': len(clusters),
+            'redbook_paths': redbook_paths,
+        }

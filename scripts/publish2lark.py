@@ -19,6 +19,7 @@ _SECRETS_FILE = _PROJECT_ROOT / 'config' / 'secrets.json'
 # 导入 WorkModule 基类
 sys.path.insert(0, str(_PROJECT_ROOT / 'project-space'))
 from utils.work_module import WorkModule
+from utils.base_config import FN_BRIEFING_FEISHU
 from utils.lark_commander import LarkCmd
 
 
@@ -29,7 +30,7 @@ class LarkWikiPublisher(WorkModule):
         super().__init__('publish2lark', date)
         self.date = date
         self.output_dir = _PROJECT_ROOT / 'output' / date
-        self.briefing_file = self.output_dir / 'briefing.md'
+        self.briefing_file = self.output_dir / FN_BRIEFING_FEISHU
         
         # 加载配置
         with open(_SECRETS_FILE, 'r', encoding='utf-8') as f:

@@ -9,13 +9,18 @@ _PROJECT_SPACE = Path(__file__).resolve().parent.parent
 PROJECT_ROOT = _PROJECT_SPACE.parent
 SECRETS_JSON = PROJECT_ROOT / 'config' / 'secrets.json'
 
-# --- 配置文件 ---
+# --- 模板文件 ---
 CONFIG_DIR = _PROJECT_SPACE / 'config'
 CONFIG_YAML = CONFIG_DIR / 'config.yaml'
+# 飞书文档用（Markdown）
 TEMPLATE_BRIEFING = CONFIG_DIR / 'briefing-template.md.j2'
-# TEMPLATE_BRIEFING_HTML = CONFIG_DIR / 'briefing-template-bold-navy.html.j2'
-# TEMPLATE_BRIEFING_HTML = CONFIG_DIR / 'briefing-template-wechat-card.html.j2'
-TEMPLATE_BRIEFING_HTML = CONFIG_DIR / 'briefing-template-wechat-inline.html.j2'
+FN_BRIEFING_FEISHU = 'briefing-feishu.md'
+# 微信公众号用（HTML）
+TEMPLATE_BRIEFING_WECHAT = CONFIG_DIR / 'briefing-template-wechat.html.j2'
+FN_BRIEFING_WECHAT = 'briefing-wechat.html'
+# 小红书截图用（HTML，通过 card_type 参数区分 news / quick_view）
+TEMPLATE_BRIEFING_REDBOOK = CONFIG_DIR / 'briefing-template-redbook.html.j2'
+FN_REDBOOK = 'redbook'
 
 # --- 模板文件名称 ---
 PROMPTS_DIR = _PROJECT_SPACE / 'prompts'
@@ -27,8 +32,6 @@ FN_RAW_FETCHED = 'raw_fetched.jsonl'
 FN_INGESTED = 'ingested.jsonl'
 FN_FILTERED_RANKED = 'filtered_ranked.json'
 FN_SUMMARY = 'summary.json'
-FN_BRIEFING = 'briefing.md'
-FN_BRIEFING_HTML = 'briefing.html'
 
 # ----------------------------------------------------------------------------
 
@@ -117,7 +120,7 @@ class PathConfig:
             'ingested': d / FN_INGESTED,
             'filtered': d / FN_FILTERED_RANKED,
             'summary': d / FN_SUMMARY,
-            'briefing': d / FN_BRIEFING,
+            'briefing': d / FN_BRIEFING_FEISHU,
         }
 
     def get_recent_output_dirs(self, days: int = 3) -> list:

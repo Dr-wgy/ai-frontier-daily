@@ -5,6 +5,9 @@ SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 PROJECT_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 SECRETS_FILE="${PROJECT_ROOT}/config/secrets.json"
 
+# 输出文件名（与 project-space/utils/base_config.py 保持一致）
+FN_BRIEFING_FEISHU='briefing-feishu.md'
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -25,7 +28,7 @@ if [ -n "$1" ] && [[ "$1" == *.md ]]; then
     DATE=$(basename "$(dirname "$1")")
 else
     DATE="${1:-$(date +%Y-%m-%d)}"
-    BRIEFING_FILE="${PROJECT_ROOT}/output/${DATE}/briefing.md"
+    BRIEFING_FILE="${PROJECT_ROOT}/output/${DATE}/${FN_BRIEFING_FEISHU}"
 fi
 
 RENDER_PROJECT=$(python3 -c "import json; print(json.load(open('${SECRETS_FILE}'))['weichat']['render_project'])")
