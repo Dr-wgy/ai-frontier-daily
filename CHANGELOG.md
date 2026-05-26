@@ -4,6 +4,32 @@
 
 #### 研发工程
 
+##### 1. 新增公众号内联 HTML Jinja2 模板（html-anything基础模版的改造版本）
+
+- **briefing-template-wechat-inline.html.j2** - 新增面向公众号的纯内联样式渲染模板
+  - 基于html-anything产出的基础模版的基础上 进行改造得来
+  - 当前默认 使用 wechat-inline 模版（for wechat公众号）
+- **assemble** - `section.heading` 去除多余 `## ` 前缀，由模板自行控制标题层级
+- 沉淀「微信公众号-html样式注意事项」文档
+
+---
+
+### 2026-05-24 (commit: eb9e95f)，作者：wghlmg1210
+
+#### 研发工程
+
+##### 1. 内化微信渲染（移除render_wechat外部依赖）
+- 【移除事项】配置 & 工作流 & 说明文档：相应更新
+  - secrets.example.json、ai-frontier-daily.example.lobster、PIPELINE.md
+- 【内化事项】新增HTML模版 & 集成至 assemble 中
+  - briefing-template-bold-navy.html.j2、assemble.py
+
+---
+
+### 2026-05-24 (commit: 35b3f7f)，作者：wghlmg1210
+
+#### 研发工程
+
 ##### 1. SummaryCluster 自管理属性，解除对 NewsCluster 强依赖
 
 - **domain** - SummaryCluster 移除 cluster 嵌套，改为自管理全部字段
@@ -24,7 +50,7 @@
 
 ---
 
-### 2026-05-23 (commit: -)，作者：wghlmg1210
+### 2026-05-23 (commit: 2d160f7)，作者：wghlmg1210
 
 #### 研发工程
 

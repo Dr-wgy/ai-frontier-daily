@@ -18,22 +18,18 @@ steps:
   - id: news_frontier
     command: $SKILL_DIR/scripts/base/run.sh python scripts/news_frontier.py --date $(date +%Y-%m-%d)
 
-  # 2. 微信图文渲染
-  - id: render_wechat
-    command: $SKILL_DIR/scripts/base/run.sh bash scripts/render_wechat.sh $(date +%Y-%m-%d)
-
-  # 3. 发布飞书文档 (重定向到 /tmp 目录)
+  # 2. 发布飞书文档 (重定向到 /tmp 目录)
   - id: publish2lark
     command: bash -c '$SKILL_DIR/scripts/base/run.sh python scripts/publish2lark.py --date $(date +%Y-%m-%d) > /tmp/afinfo-doc_url.txt'
 
-  # 4. 推送飞书群 (从 /tmp 读取文件)
+  # 3. 推送飞书群 (从 /tmp 读取文件)
   - id: push2group
     command: bash -c 'DOC_URL=$(cat /tmp/afinfo-doc_url.txt) && $SKILL_DIR/scripts/base/run.sh python scripts/push2group.py --date $(date +%Y-%m-%d) --doc-url "$DOC_URL"'
 
-  # 5. 更新多维表格
+  # 4. 更新多维表格
   - id: publish2lark_base
     command: bash -c '$SKILL_DIR/scripts/base/run.sh python scripts/publish2lark_base.py --date $(date +%Y-%m-%d) > /tmp/afinfo-base_url.txt'
 
-  # 6. 最终报告
+  # 5. 最终报告
   - id: final_report
     command: bash -c 'echo "✅ 完成！\n📄 文档：$(cat /tmp/afinfo-doc_url.txt)\n📊 表格：$(cat /tmp/afinfo-base_url.txt)"'

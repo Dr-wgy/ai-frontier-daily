@@ -54,3 +54,8 @@ config/secrets.json
 *.origin
 
 todolist/
+
+scripts/inline_styles.py
+
+project-space/config/briefing-template-bold-navy.html.j2
+project-space/config/briefing-template-wechat-card.html.j2

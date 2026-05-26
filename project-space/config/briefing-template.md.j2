@@ -19,21 +19,22 @@
 {%- if footer.mode == 'blocks' %}
 ### 🚀 今日速览（一句话版）
 {% for row in footer.rows -%}
-- {{ row.abbrev }}： {{ row.lines[0] }}{% for line in row.lines[1:] %}{{ line }}{% endfor %}
+> - {{ row.abbrev }}： {{ row.lines[0] }}{% for line in row.lines[1:] %}{{ line }}{% endfor %}
 {% endfor %}
 {% else -%}
 {% for line in footer.fallback_lines -%}
-{{ line }}
+> {{ line }}
 {% endfor %}
 {% endif -%}
 
 ---
 
 {%- for section in sections %}
-{{ section.heading }}{% if section.empty -%}
+## {{ section.heading }}{% if section.empty -%}
+
 *今日暂无相关报道*
 ---
-{% else -%}
+{% else %}
 {% for it in section.entries -%}
 {{ news_item(it) }}
 {% endfor %}

@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 from typing import Sequence, List
 
-from utils import AppConfig, TEMPLATE_BRIEFING, TemplateRenderer, WorkModule
+from utils import AppConfig, TEMPLATE_BRIEFING, TEMPLATE_BRIEFING_HTML, TemplateRenderer, WorkModule
 from utils.domain import SummaryCluster
 
 _CN_NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十']
@@ -97,7 +97,7 @@ class AssembleModule(WorkModule):
                 else:
                     self.logger.debug(f"[过滤] [{m.name}] 标题: {sc.title[:50]}... 原因: plain_explain={has_plain}, impacts={has_impacts}")
             entries = [self._news_row(f"{i}.{j+1}", sc, cap) for j, sc in enumerate(summary_items)]
-            sections.append({'heading': f"## {cn}、{m.name}\n", 'empty': not summary_items, 'entries': entries})
+            sections.append({'heading': f"{cn}、{m.name}", 'empty': not summary_items, 'entries': entries})
 
         footer_data = blocks.get('footer', {})
         footer_rows = []
@@ -123,9 +123,14 @@ class AssembleModule(WorkModule):
         ctx = self._build_context(clusters, blocks)
         renderer = TemplateRenderer()
         md = renderer.render(TEMPLATE_BRIEFING, ctx)
+        html = renderer.render(TEMPLATE_BRIEFING_HTML, ctx)
 
         os.makedirs(os.path.dirname(output_file) or '.', exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(md)
 
-        return {'path': output_file, 'count': len(clusters)}
+        html_file = output_file.replace('.md', '.html')
+        with open(html_file, 'w', encoding='utf-8') as f:
+            f.write(html)
+
+        return {'path': output_file, 'html_path': html_file, 'count': len(clusters)}

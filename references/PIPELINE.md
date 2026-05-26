@@ -10,9 +10,9 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │  ai-frontier-daily.lobster                                              │
 │                                                                         │
-│  ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌─────────────────┐           │
-│  │cleanup   │───▶│news_frontier │───▶│render_wechat │───▶│  publish2lark   │           │
-│  └──────────┘    └──────────────┘    └──────────────┘    └─────────────────┘           │
+│  ┌──────────┐    ┌──────────────┐    ┌─────────────────┐           │
+│  │cleanup   │───▶│news_frontier │───▶│  publish2lark   │           │
+│  └──────────┘    └──────────────┘    └─────────────────┘           │
 │                                                                   │                    │
 │                                                                   ▼                    │
 │                                                          ┌───────────┐                 │
@@ -74,17 +74,6 @@ $SKILL_DIR/scripts/base/run.sh python scripts/news_frontier.py --date $args.date
 | `output/{DATE}/summary.json` | LLM 摘要结果，用于机器人推送 | 发布时需要 |
 | `output/{DATE}/filtered_ranked.json` | 筛选排序中间产物 | 排错时用 |
 | `output/{DATE}/ingested.jsonl` | 原始采集条目 | 排错时用 |
-
----
-
-### Step 2: `render_wechat`
-
-**功能**：渲染微信公众号格式的早报
-
-**调用命令**：
-```bash
-$SKILL_DIR/scripts/base/run.sh bash scripts/render_wechat.sh $args.date
-```
 
 ---
 
@@ -240,37 +229,29 @@ RSS 源列表
 │  → briefing.md                     │
 └─────────────────────────────────────┘
     │
-    ├─────────────────────────────────┤
-    ▼                                 ▼
-┌──────────────┐              ┌────────────┐
-│render_wechat │              │ publish2lark│
-│.sh           │              │ .py        │
-│              │              │            │
-│→ 微信格式    │              │→ 飞书文档   │
-└──────────────┘              └──────┬─────┘
-    │                               │
-    │                               ▼
-    │                        ┌────────────┐
-    │                        │ push2group │
-    │                        │ .py        │
-    │                        │            │
-    │                        │→ 群消息卡片 │
-    │                        └──────┬─────┘
-    │                               │
-    │                               ▼
-    │                        ┌─────────────────┐
-    │                        │publish2lark_base│
-    │                        │ .py             │
-    │                        │                 │
-    │                        │→ 多维表格记录    │
-    │                        └─────────────────┘
-    │
     ▼
-┌──────────────┐
-│final_report  │
-│              │
-│→ 完成报告    │
-└──────────────┘
+┌────────────┐
+│ publish2lark│
+│ .py        │
+│            │
+│→ 飞书文档   │
+└──────┬─────┘
+       │
+       ▼
+┌────────────┐
+│ push2group │
+│ .py        │
+│            │
+│→ 群消息卡片 │
+└──────┬─────┘
+       │
+       ▼
+┌─────────────────┐
+│publish2lark_base│
+│ .py             │
+│                 │
+│→ 多维表格记录    │
+└─────────────────┘
 ```
 
 ---
@@ -314,7 +295,6 @@ ai-frontier-daily/
 │   │   ├── init_env.sh      # 环境初始化（首次使用运行）
 │   │   └── run.sh           # 环境启动器（cd + venv + SSL + exec 透传）
 │   ├── news_frontier.py     # 主流水线入口
-│   ├── render_wechat.sh     # 微信格式渲染脚本
 │   ├── publish2lark.py      # 飞书发布脚本
 │   ├── publish2lark_base.py # 多维表格更新脚本
 │   └── push2group.py        # 群机器人推送
