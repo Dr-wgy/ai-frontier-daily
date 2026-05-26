@@ -1,0 +1,118 @@
+{# 小红书截图卡片 HTML 模板 — 通过 card_type 参数区分 news / quick_view #}
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>
+<style>
+.briefing-container { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif; color: #1e293b; }
+.briefing-content { box-sizing: border-box; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 0px; }
+
+/* news card */
+.news-card { box-sizing: border-box; background: #ffffff; border-radius: 16px; padding: 24px; width: 450px; border: 1px solid #e2e8f0; }
+.news-card-header { box-sizing: border-box; display: flex; align-items: center; margin-bottom: 14px; }
+.news-card-tags-left { box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; flex: 1; }
+.news-card-divider { box-sizing: border-box; color: #cbd5e1; font-size: 14px; font-weight: 300; text-align: center; padding: 0 8px; margin: 0 -10px; }
+.news-card-tags-right { box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; flex: 1; }
+.tag { box-sizing: border-box; display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 6px; font-size: 10px; font-weight: 500; letter-spacing: 0.02em; white-space: nowrap; }
+.tag--blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.tag--green { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.tag--gray { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+.tag__leaf { box-sizing: border-box; }
+.tag--mr { margin-right: 5px; }
+.tag--ml { margin-left: 5px; }
+.news-headline { box-sizing: border-box; font-size: 18px; font-weight: 700; line-height: 28px; color: #0f172a; margin-bottom: 12px; letter-spacing: -0.3px; }
+.news-hot { box-sizing: border-box; font-size: 16px; margin-left: 6px; }
+.news-headline__leaf, .news-hot__leaf { box-sizing: border-box; }
+.news-summary { box-sizing: border-box; font-size: 14px; line-height: 24px; color: #283e5dff; margin-bottom: 18px; }
+.news-summary__leaf { box-sizing: border-box; }
+.plain-explain-box { box-sizing: border-box; background: #f8fafb; border: 1px solid #e8edf2; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.plain-explain-label { box-sizing: border-box; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px; }
+.plain-explain-label__leaf, .plain-explain-text__leaf { box-sizing: border-box; }
+.plain-explain-text { box-sizing: border-box; font-size: 13px; line-height: 22px; color: #64748b; }
+.impact-box { box-sizing: border-box; border-left: 2px solid #cbd5e1; padding: 8px 12px; border-radius: 0 6px 6px 0; background: #fafbfc; }
+.impact-label { box-sizing: border-box; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+.impact-label__leaf, .impact-text__leaf { box-sizing: border-box; }
+.impact-text { box-sizing: border-box; font-size: 12px; line-height: 20px; color: #78716c; }
+
+/* quick-view card */
+.quick-view-card { box-sizing: border-box; background: #ffffff; border-radius: 20px; padding: 28px 28px 20px; width: 450px; border: 1px solid #e2e8f0; }
+.quick-view-title { box-sizing: border-box; font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
+.quick-view-row { box-sizing: border-box; display: flex; align-items: flex-start; padding: 14px 0; }
+.quick-view-row--bordered { border-bottom: 1px solid #f1f5f9; }
+.quick-view-icon { box-sizing: border-box; font-size: 20px; flex-shrink: 0; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; background: #f8fafc; border-radius: 10px; margin-right: 14px; }
+.quick-view-content { box-sizing: border-box; flex: 1; min-width: 0; }
+.quick-view-abbrev { box-sizing: border-box; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px; letter-spacing: 0.02em; }
+.quick-view-lines { box-sizing: border-box; font-size: 13px; color: #64748b; line-height: 20px; }
+.quick-view-fallback-line { box-sizing: border-box; font-size: 13px; color: #64748b; line-height: 20px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+</style>
+
+{%- macro tag_span(label, color, extra_class='') -%}
+{%- if color == 'blue' -%}
+<span class="tag tag--blue {{ extra_class }}"><span leaf="" class="tag__leaf">#{{ label }}</span></span>
+{%- elif color == 'green' -%}
+<span class="tag tag--green {{ extra_class }}"><span leaf="" class="tag__leaf">#{{ label }}</span></span>
+{%- else -%}
+<span class="tag tag--gray {{ extra_class }}"><span leaf="" class="tag__leaf">#{{ label }}</span></span>
+{%- endif -%}
+{%- endmacro -%}
+
+<section class="briefing-container">
+  <section class="briefing-content">
+
+    {# === news card === #}
+    {%- if card_type == 'news' -%}
+    {%- set it = data -%}
+    <section class="news-card">
+      <section class="news-card-header">
+        <section class="news-card-tags-left">
+          {%- for tag in it.vertical_tags -%}
+          {{ tag_span(tag, loop.cycle('blue', 'green', 'gray'), 'tag--mr' if not loop.last else '') }}
+          {%- endfor -%}
+        </section>
+        <span class="news-card-divider"><span leaf="" class="news-card-divider__leaf">｜</span></span>
+        <section class="news-card-tags-right">
+          {%- for tag in it.general_tags -%}
+          {{ tag_span(tag, loop.cycle('blue', 'green', 'gray'), 'tag--ml' if not loop.first else '') }}
+          {%- endfor -%}
+        </section>
+      </section>
+      <h3 class="news-headline"><span leaf="" class="news-headline__leaf">{{ it.headline }}</span>{% if it.hot %}<span class="news-hot"><span leaf="" class="news-hot__leaf">{{ it.hot }}</span></span>{% endif %}</h3>
+      <section class="news-summary"><span leaf="" class="news-summary__leaf">{{ it.summary }}</span></section>
+      {%- if it.plain_explain %}
+      <section class="plain-explain-box">
+        <section class="plain-explain-label"><span leaf="" class="plain-explain-label__leaf">☁️ 白话版</span></section>
+        <section class="plain-explain-text"><span leaf="" class="plain-explain-text__leaf">{{ it.plain_explain }}</span></section>
+      </section>
+      {%- endif %}
+      {%- if it.impacts %}
+      <section class="impact-box">
+        <section class="impact-label"><span leaf="" class="impact-label__leaf">💡 影响</span></section>
+        <section class="impact-text"><span leaf="" class="impact-text__leaf">{% for imp in it.impacts %}{{ imp }}{% if not loop.last %} / {% endif %}{% endfor %}</span></section>
+      </section>
+      {%- endif %}
+    </section>
+
+    {# === quick-view card === #}
+    {%- elif card_type == 'quick_view' -%}
+    {%- set footer = data -%}
+    <section class="quick-view-card">
+      <h2 class="quick-view-title"><span leaf="" class="quick-view-title__leaf">⚡ 今日速览</span></h2>
+      {%- if footer.mode == 'blocks' %}
+      {%- for row in footer.rows %}
+      <section class="quick-view-row{% if not loop.last %} quick-view-row--bordered{% endif %}">
+        <section class="quick-view-icon"><span leaf="" class="quick-view-icon__leaf">{{ loop.cycle('🔧', '🧠', '🤖', '📱', '📊') }}</span></section>
+        <section class="quick-view-content">
+          <section class="quick-view-abbrev"><span leaf="" class="quick-view-abbrev__leaf">{{ row.abbrev }}</span></section>
+          <section class="quick-view-lines"><span leaf="" class="quick-view-lines__leaf">{{ row.lines | join('') }}</span></section>
+        </section>
+      </section>
+      {%- endfor %}
+      {%- else %}
+      {%- for line in footer.fallback_lines %}
+      <section class="quick-view-fallback-line"><span leaf="" class="quick-view-fallback-line__leaf">{{ line }}</span></section>
+      {%- endfor %}
+      {%- endif %}
+    </section>
+    {%- endif %}
+
+  </section>
+</section>
+
+</body></html>
