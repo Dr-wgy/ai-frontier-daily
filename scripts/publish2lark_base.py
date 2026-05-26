@@ -369,7 +369,11 @@ class LarkBasePublisher:
         uploaded = 0
         for i in range(0, len(rows), batch_size):
             batch = rows[i:i+batch_size]
-            data = json.dumps({"fields": field_names, "rows": batch}, ensure_ascii=False)
+            data = json.dumps({
+                "fields": field_names,
+                "field_types": self.field_name_to_type,
+                "rows": batch
+            }, ensure_ascii=False)
 
             result = LarkCmd.BASE_RECORD_BATCH_CREATE.args(
                 base_token=self.base_token,

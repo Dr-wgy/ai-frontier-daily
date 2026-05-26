@@ -23,7 +23,6 @@ from lark_oapi.api.bitable.v1 import (
     ListAppTableFieldRequest,
     CreateAppTableFieldRequest,
     SearchAppTableRecordRequest,
-    DeleteAppTableRecordRequest,
     BatchDeleteAppTableRecordRequest,
     BatchDeleteAppTableRecordRequestBody,
     BatchCreateAppTableRecordRequest,
@@ -294,6 +293,94 @@ class LarkSdkCommand:
         client = LarkClient().client
         handler = self._get_handler()
         return handler(client)
+
+    def _extract_field_value(self, value):
+        """提取字段值，处理 SDK 返回的嵌套结构
+        
+        处理各种嵌套格式：
+        - [[{'text': '2026-05-26', 'type': 'text'}]] -> '2026-05-26'
+        - [{'text': 'value', 'type': 'text'}] -> 'value'
+        - {'text': 'value'} -> 'value'
+        - 其他值保持不变
+        """
+        if value is None:
+            return None
+        
+        # 处理三层嵌套：[[{...}]]
+        if isinstance(value, list) and len(value) > 0:
+            if isinstance(value[0], list) and len(value[0]) > 0:
+                if isinstance(value[0][0], dict) and 'text' in value[0][0]:
+                    return value[0][0]['text']
+            # 处理两层嵌套：[{...}]
+            elif isinstance(value[0], dict):
+                if 'text' in value[0]:
+                    return value[0]['text']
+        
+        # 处理单层对象：{...}
+        if isinstance(value, dict):
+            if 'text' in value:
+                return value['text']
+        
+        return value
+
+    def _convert_value_by_type(self, value, field_type):
+        """根据字段类型转换值
+        
+        目前只处理日期类型字段的转换：
+        - date 类型：将日期字符串转换为 Unix 时间戳（毫秒）
+        - 其他类型：保持原值不变
+        """
+        if value is None:
+            return None
+        
+        # 只对日期类型字段进行转换
+        if field_type and (field_type.lower() == '5'):
+            return self._convert_date_to_timestamp(value)
+        
+        return value
+
+    def _convert_date_to_timestamp(self, value):
+        """将日期字符串转换为 Unix 时间戳（毫秒）
+        
+        支持的日期格式：
+        - '2026-05-26' -> 1753507200000
+        - '2026-05-26 12:00:00' -> 1753546800000
+        - 其他值保持不变
+        """
+        if value is None:
+            return None
+        
+        if isinstance(value, int):
+            # 已经是数字，假设是时间戳
+            return value
+        
+        if isinstance(value, str):
+            import re
+            
+            # 尝试解析日期字符串
+            date_patterns = [
+                r'^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$',  # 2026-05-26 12:00:00
+                r'^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})$',        # 2026-05-26 12:00
+                r'^(\d{4})-(\d{2})-(\d{2})$',                         # 2026-05-26
+            ]
+            
+            for pattern in date_patterns:
+                match = re.match(pattern, value.strip())
+                if match:
+                    groups = match.groups()
+                    year = int(groups[0])
+                    month = int(groups[1])
+                    day = int(groups[2])
+                    hour = int(groups[3]) if len(groups) > 3 else 0
+                    minute = int(groups[4]) if len(groups) > 4 else 0
+                    second = int(groups[5]) if len(groups) > 5 else 0
+                    
+                    # 计算 Unix 时间戳（毫秒）
+                    from datetime import datetime
+                    timestamp = datetime(year, month, day, hour, minute, second).timestamp() * 1000
+                    return int(timestamp)
+        
+        return value
 
     def _run_lark_cli(self) -> Optional[str]:
         """回退到 lark-cli 执行"""
@@ -838,14 +925,18 @@ class LarkSdkCommand:
         # 获取 offset 参数
         offset = search_json.get('offset', 0)
         
+        # 获取 select_fields 参数（用于返回 fields 字段）
+        select_fields = search_json.get('select_fields', [])
+        
         # 如果 offset > 0，说明是第二次及以后的请求
         # 由于 SDK 层已经在第一次请求时返回了所有数据，这里直接返回空结果
         if offset > 0:
             return json.dumps({
                 'data': {
+                    'data': [],
                     'record_id_list': [],
                     'field_id_list': [],
-                    'items': [],
+                    'fields': select_fields,
                     'has_more': False
                 }
             }, ensure_ascii=False)
@@ -888,7 +979,8 @@ class LarkSdkCommand:
                 for record in response.data.items:
                     all_record_id_list.append(record.record_id)
                     fields = getattr(record, 'fields', {})
-                    item_values = [fields.get(fid) for fid in all_field_id_list]
+                    # 提取字段值，处理嵌套结构
+                    item_values = [self._extract_field_value(fields.get(fid)) for fid in all_field_id_list]
                     all_items.append(item_values)
 
             # 检查是否还有更多数据
@@ -903,11 +995,13 @@ class LarkSdkCommand:
 
         # 返回 lark-cli 兼容格式
         # 添加 has_more=False 防止外层循环继续请求
+        # 注意：外层 data 是响应包装，内层 data 对应 lark-cli 返回的 items
         return json.dumps({
             'data': {
+                'data': all_items,
                 'record_id_list': all_record_id_list,
                 'field_id_list': all_field_id_list,
-                'items': all_items,
+                'fields': select_fields,
                 'has_more': False
             }
         }, ensure_ascii=False)
@@ -979,17 +1073,24 @@ class LarkSdkCommand:
             field_names = data_json['fields']
             rows = data_json['rows']
             
+            # 获取字段类型信息（可选）
+            field_types = data_json.get('field_types', {})
+            
             for row in rows:
                 fields = {}
                 for i, field_name in enumerate(field_names):
                     if i < len(row):
-                        fields[field_name] = row[i]
+                        # 根据字段类型处理日期转换
+                        field_type = field_types.get(field_name, '')
+                        fields[field_name] = self._convert_value_by_type(row[i], field_type)
                 records.append(AppTableRecord.builder().fields(fields).build())
         else:
             # 旧格式: [{"field": value}, ...]
             for item in data_json:
                 if isinstance(item, dict):
-                    records.append(AppTableRecord.builder().fields(item).build())
+                    # 处理日期字段：转换为 Unix 时间戳（毫秒）
+                    converted_item = {k: self._convert_date_to_timestamp(v) for k, v in item.items()}
+                    records.append(AppTableRecord.builder().fields(converted_item).build())
 
         if not records:
             return json.dumps([])

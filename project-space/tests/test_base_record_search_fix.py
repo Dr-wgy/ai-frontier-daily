@@ -53,7 +53,8 @@ def test_response_format_compatibility():
         data = parsed['data']
         assert 'record_id_list' in data, "响应应包含 'record_id_list' 字段"
         assert 'field_id_list' in data, "响应应包含 'field_id_list' 字段"
-        assert 'items' in data, "响应应包含 'items' 字段"
+        assert 'data' in data, "响应应包含内层 'data' 字段"
+        assert 'fields' in data, "响应应包含 'fields' 字段"
         
         # 验证 record_id_list
         assert len(data['record_id_list']) == 2
@@ -65,15 +66,15 @@ def test_response_format_compatibility():
         assert 'daily_report_time' in data['field_id_list']
         assert 'title' in data['field_id_list']
         
-        # 验证 items 格式（数组格式，与 lark-cli 兼容）
-        assert len(data['items']) == 2
-        assert isinstance(data['items'][0], list), "items 元素应为数组格式"
-        assert len(data['items'][0]) == 2, "每个 items 元素应包含与 field_id_list 对应的字段值"
+        # 验证 data 格式（数组格式，与 lark-cli 兼容）
+        assert len(data['data']) == 2
+        assert isinstance(data['data'][0], list), "data 元素应为数组格式"
+        assert len(data['data'][0]) == 2, "每个 data 元素应包含与 field_id_list 对应的字段值"
         
         print("✓ 响应格式与 lark-cli 兼容")
         print(f"  record_id_list: {data['record_id_list']}")
         print(f"  field_id_list: {data['field_id_list']}")
-        print(f"  items: {data['items']}")
+        print(f"  data: {data['data']}")
 
 
 def test_request_body_conversion():
@@ -142,20 +143,21 @@ def test_batch_create():
     mock_response.data.records = [mock_record1, mock_record2]
     
     mock_client = MagicMock()
-    mock_client.bitable.v1.app_table_record.batch_create.return_value = mock_response
+    mock_client.bitable.v1.app_table_record.batch_create = Mock(side_effect=lambda request: mock_response)
     
     with patch('utils.lark_sdk_commander.LarkClient.client', new_callable=PropertyMock) as mock_prop:
         mock_prop.return_value = mock_client
         
-        # 测试新格式: {"fields": [...], "rows": [[...], [...]]}
+        # 测试带日期字段的格式
         result = LarkCmd.BASE_RECORD_BATCH_CREATE.args(
             base_token='test_base_token',
             table_id='test_table_id',
             data_json=json.dumps({
-                "fields": ["title", "content"],
+                "fields": ["title", "daily_report_time", "content"],
+                "field_types": {"daily_report_time": "date"},
                 "rows": [
-                    ["Article 1", "Content 1"],
-                    ["Article 2", "Content 2"]
+                    ["Article 1", "2026-05-26", "Content 1"],
+                    ["Article 2", "2026-05-27", "Content 2"]
                 ]
             })
         ).run()
@@ -166,8 +168,17 @@ def test_batch_create():
         assert 'new_rec1' in created_ids
         assert 'new_rec2' in created_ids
         
-        print("✓ 批量创建功能正常 (新格式)")
+        # 验证日期字段被转换为时间戳
+        call_args = mock_client.bitable.v1.app_table_record.batch_create.call_args[0][0]
+        records = call_args.request_body.records
+        # 第一个记录的 daily_report_time 应该是时间戳
+        fields = records[0].fields
+        assert isinstance(fields['daily_report_time'], int), "日期字段应该被转换为时间戳"
+        assert fields['daily_report_time'] > 1700000000000, "时间戳应该大于 2023 年"
+        
+        print("✓ 批量创建功能正常 (带日期字段)")
         print(f"  创建的记录ID: {created_ids}")
+        print(f"  日期字段转换为时间戳: {fields['daily_report_time']}")
 
 
 def test_batch_delete():
@@ -264,7 +275,8 @@ def test_auto_pagination():
         assert len(data['record_id_list']) == 2
         assert 'rec1' in data['record_id_list']
         assert 'rec2' in data['record_id_list']
-        assert len(data['items']) == 2
+        assert len(data['data']) == 2  # 改为 data 字段
+        assert data.get('fields') == ['title']  # 验证 fields 字段
         assert data.get('has_more') is False
         
         print("✓ SDK 层自动分页功能正常")
@@ -290,7 +302,7 @@ def test_auto_pagination():
         
         # 验证返回空结果
         assert len(data2['record_id_list']) == 0
-        assert len(data2['items']) == 0
+        assert len(data2['data']) == 0
         assert data2.get('has_more') is False
         
         print("✓ offset > 0 时返回空结果，防止外层循环死循环")
