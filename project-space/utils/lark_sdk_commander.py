@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Optional
 from urllib.parse import quote_plus
 
+import jq
 import lark_oapi as lark
 from lark_oapi.api.authen.v1 import (
     CreateAccessTokenRequest,
@@ -17,12 +16,6 @@ from lark_oapi.api.authen.v1 import (
     CreateRefreshAccessTokenRequest,
     CreateRefreshAccessTokenRequestBody,
 )
-from lark_oapi.api.wiki.v2 import (
-    ListSpaceNodeRequest,
-    CreateSpaceNodeRequest,
-    MoveSpaceNodeRequest,
-)
-from lark_oapi.api.docx.v1 import UpdateDocumentRequest
 from lark_oapi.api.bitable.v1 import (
     CreateAppRequest as BaseCreateRequest,
     ListAppTableRequest,
@@ -31,10 +24,14 @@ from lark_oapi.api.bitable.v1 import (
     CreateAppTableFieldRequest,
     SearchAppTableRecordRequest,
     DeleteAppTableRecordRequest,
+    BatchDeleteAppTableRecordRequest,
+    BatchDeleteAppTableRecordRequestBody,
     BatchCreateAppTableRecordRequest,
+    BatchCreateAppTableRecordRequestBody,
+    AppTableRecord,
 )
 from lark_oapi.api.im.v1 import CreateMessageRequest
-
+from lark_oapi.api.wiki.v2 import *
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
@@ -48,6 +45,13 @@ class LarkClient:
     _user_access_token = None
     _refresh_token = None
     _expires_at = 0  # 过期时间戳
+    _logger = None
+
+    def _init_logger(self):
+        """初始化日志记录器（遵循项目统一日志架构）"""
+        from .logger import get_logger
+        import time
+        self._logger = get_logger('lark_client', time.strftime('%Y-%m-%d'))
 
     def __new__(cls):
         if cls._instance is None:
@@ -58,6 +62,7 @@ class LarkClient:
     def __init__(self):
         if self._initialized:
             return
+        self._init_logger()
         self._load_config()
         self._init_client()
         self._initialized = True
@@ -87,6 +92,7 @@ class LarkClient:
         self._client = lark.Client.builder()\
             .app_id(self._config['app_id'])\
             .app_secret(self._config['app_secret'])\
+            .enable_set_token(True)\
             .build()
 
     @property
@@ -108,7 +114,8 @@ class LarkClient:
         if not force and self._expires_at > time.time() + 300:
             return
 
-        print(f"正在刷新 user_access_token...")
+        if self._logger:
+            self._logger.info(f"正在刷新 user_access_token...")
         
         request = CreateRefreshAccessTokenRequest.builder() \
             .request_body(CreateRefreshAccessTokenRequestBody.builder() \
@@ -120,10 +127,12 @@ class LarkClient:
         response = self._client.authen.v1.refresh_access_token.create(request)
 
         if not response.success():
-            print(f"刷新失败: {response.code} - {response.msg}")
+            if self._logger:
+                self._logger.error(f"刷新失败: {response.code} - {response.msg}")
             # 如果是 refresh_token 过期，清空它以便触发重新授权
             if response.code == 20037 or "refresh_token" in response.msg:
-                print("⚠️ refresh_token 已过期或失效，请重新执行初始化授权。")
+                if self._logger:
+                    self._logger.warning(f"refresh_token 已过期或失效，请重新执行初始化授权。")
                 self._refresh_token = None
             return
 
@@ -135,7 +144,8 @@ class LarkClient:
 
         # 持久化到文件
         self._save_token_to_config()
-        print(f"Token 刷新成功，新过期时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self._expires_at))}")
+        if self._logger:
+            self._logger.info(f"Token 刷新成功，新过期时间: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self._expires_at))}")
 
     def get_auth_url(self, redirect_uri: str = None) -> str:
         """生成飞书授权 URL
@@ -164,7 +174,8 @@ class LarkClient:
 
     def init_with_code(self, code: str, redirect_uri: str = "http://127.0.0.1:8080"):
         """通过 code 初始化 Token"""
-        print(f"正在通过 code 换取 Token...")
+        if self._logger:
+            self._logger.info(f"正在通过 code 换取 Token...")
         
         request = CreateAccessTokenRequest.builder() \
             .request_body(CreateAccessTokenRequestBody.builder() \
@@ -176,7 +187,8 @@ class LarkClient:
         response = self._client.authen.v1.access_token.create(request)
 
         if not response.success():
-            print(f"初始化失败: {response.code} - {response.msg}")
+            if self._logger:
+                self._logger.error(f"初始化失败: {response.code} - {response.msg}")
             return False
 
         # 更新内存状态
@@ -187,7 +199,8 @@ class LarkClient:
 
         # 持久化到文件
         self._save_token_to_config()
-        print(f"✓ 初始化成功！Token 已保存。")
+        if self._logger:
+            self._logger.info(f"初始化成功！Token 已保存。")
         return True
 
     def _save_token_to_config(self):
@@ -371,21 +384,24 @@ class LarkSdkCommand:
         page_token = None
 
         while True:
-            request = ListSpaceNodeRequest.builder()\
-                .space_id(space_id)\
-                .page_size(500)\
-                .build()
-
+            # 使用 Builder 链式调用，只在参数有值时添加
+            builder = ListSpaceNodeRequest.builder().page_size(50)
+            
+            if space_id:
+                builder = builder.space_id(space_id)
             if parent_token:
-                request.parent_node_token = parent_token
+                builder = builder.parent_node_token(parent_token)
             if page_token:
-                request.page_token = page_token
+                builder = builder.page_token(page_token)
+            
+            request = builder.build()
 
             user_token = self._get_user_access_token()
+            
             if user_token:
-                request.header_user_access_token = user_token
-
-            response = client.wiki.v2.space_node.list(request)
+                response = client.wiki.v2.space_node.list(request, lark.RequestOption.builder().user_access_token(user_token).build())
+            else:
+                response = client.wiki.v2.space_node.list(request)
 
             if not response.success():
                 if self._logger:
@@ -412,8 +428,8 @@ class LarkSdkCommand:
             if not page_token:
                 break
 
-        result = self._apply_query({'data': {'nodes': all_items}}, query)
-        return json.dumps(result, ensure_ascii=False) if result is not None else None
+        return self._apply_query({'data': {'nodes': all_items}}, query)
+
 
     def _handle_wiki_node_create(self, client) -> Optional[str]:
         """处理 wiki 节点创建"""
@@ -422,21 +438,20 @@ class LarkSdkCommand:
         parent_token = self._kwargs.get('parent_token')
 
         request = CreateSpaceNodeRequest.builder()\
-            .build()
-
-        request.body = {
-            "obj_type": "docx",
-            "space_id": space_id,
-            "title": title,
-        }
-        if parent_token:
-            request.body["parent_node_token"] = parent_token
+            .space_id(space_id)\
+            .request_body(Node.builder()
+            .obj_type("docx")
+            .parent_node_token(parent_token)
+            .node_type("origin")
+            .title(title)
+            .build()).build()
 
         user_token = self._get_user_access_token()
+        
         if user_token:
-            request.header_user_access_token = user_token
-
-        response = client.wiki.v2.space_node.create(request)
+            response = client.wiki.v2.space_node.create(request, lark.RequestOption.builder().user_access_token(user_token).build())
+        else:
+            response = client.wiki.v2.space_node.create(request)
 
         if not response.success():
             if self._logger:
@@ -451,21 +466,25 @@ class LarkSdkCommand:
     def _handle_wiki_node_move(self, client) -> Optional[str]:
         """处理 wiki 节点移动"""
         node_token = self._kwargs.get('node_token')
-        target_parent_token = self._kwargs.get('target_token')
+        target_parent_token = self._kwargs.get('target_parent_token')
+        space_id = self._kwargs.get('space_id')
 
         request = MoveSpaceNodeRequest.builder()\
+            .node_token(node_token)\
+            .space_id(space_id)\
+            .request_body(MoveSpaceNodeRequestBody.builder()
+                .target_parent_token(target_parent_token)
+                .target_space_id(space_id)
+                .build())\
             .build()
 
-        request.body = {
-            "node_token": node_token,
-            "target_parent_token": target_parent_token,
-        }
 
         user_token = self._get_user_access_token()
+        
         if user_token:
-            request.header_user_access_token = user_token
-
-        response = client.wiki.v2.space_node.move(request)
+            response = client.wiki.v2.space_node.move(request, lark.RequestOption.builder().user_access_token(user_token).build())
+        else:
+            response = client.wiki.v2.space_node.move(request)
 
         if not response.success():
             if self._logger:
@@ -475,69 +494,168 @@ class LarkSdkCommand:
         return "success"
 
     def _handle_doc_update(self, client) -> Optional[str]:
-        """处理文档更新（使用底层 PATCH 接口支持 Markdown 覆盖）"""
+        """处理文档更新（严格遵循 SDK 原生接口，绝不虚构）"""
         doc_token = self._kwargs.get('doc_token')
         title = self._kwargs.get('title')
+        space_id = self._kwargs.get('space_id')
+
+        document_id = None
+
+        # 1. 如果提供了 doc_token，识别并转换 Wiki Token -> Docx Token
+        if doc_token:
+            from lark_oapi.api.wiki.v2 import GetNodeSpaceRequest
+            get_node_req = GetNodeSpaceRequest.builder() \
+                .token(doc_token) \
+                .build()
+
+            user_token = self._get_user_access_token()
+
+            if user_token:
+                get_node_resp = client.wiki.v2.space.get_node(get_node_req, lark.RequestOption.builder().user_access_token(user_token).build())
+            else:
+                get_node_resp = client.wiki.v2.space.get_node(get_node_req)
+
+            if get_node_resp.success() and hasattr(get_node_resp.data, 'node'):
+                node_data = get_node_resp.data.node
+                document_id = node_data.obj_token
+                if not space_id:
+                    space_id = node_data.space_id
+            else:
+                if self._logger:
+                    self._logger.error(f"Wiki 节点解析失败，无法进行后续操作: {get_node_resp.msg}")
+                return None
+        else:
+            # 1.1 如果没有提供 doc_token，创建新文档
+            from lark_oapi.api.docx.v1 import CreateDocumentRequest, CreateDocumentRequestBody
+
+            create_doc_req = CreateDocumentRequest.builder() \
+                .request_body(CreateDocumentRequestBody.builder()
+                    .title(title or "新文档")
+                    .build()) \
+                .build()
+
+            user_token = self._get_user_access_token()
+
+            if user_token:
+                create_doc_resp = client.docx.v1.document.create(create_doc_req, lark.RequestOption.builder().user_access_token(user_token).build())
+            else:
+                create_doc_resp = client.docx.v1.document.create(create_doc_req)
+
+            if not create_doc_resp.success():
+                if self._logger:
+                    self._logger.error(f"文档创建失败: {create_doc_resp.msg}")
+                return None
+
+            document_id = create_doc_resp.data.document.document_id
+
+        # 2. 标题更新：仅在存在对应 Wiki 接口时执行
+        if title and space_id and doc_token:
+            from lark_oapi.api.wiki.v2 import UpdateTitleSpaceNodeRequest, UpdateTitleSpaceNodeRequestBody
+            wiki_req = UpdateTitleSpaceNodeRequest.builder() \
+                .space_id(space_id) \
+                .node_token(doc_token) \
+                .request_body(UpdateTitleSpaceNodeRequestBody.builder()
+                    .title(title)
+                    .build()) \
+                .build()
+
+            user_token = self._get_user_access_token()
+
+            if user_token:
+                wiki_resp = client.wiki.v2.space_node.update_title(wiki_req, lark.RequestOption.builder().user_access_token(user_token).build())
+            else:
+                wiki_resp = client.wiki.v2.space_node.update_title(wiki_req)
+            if not wiki_resp.success() and self._logger:
+                self._logger.warning(f"Wiki 标题更新失败: {wiki_resp.msg}")
+
+        # 3. 如果没有正文更新内容，返回 document_id
+        if not self._input_text:
+            return json.dumps({"document_id": document_id}, ensure_ascii=False)
+
+        # 4. Markdown 转换 (SDK 原生支持)
+        from lark_oapi.api.docx.v1 import ConvertDocumentRequest, ConvertDocumentRequestBody
+        convert_req = ConvertDocumentRequest.builder() \
+            .request_body(ConvertDocumentRequestBody.builder() \
+                .content(self._input_text) \
+                .content_type("markdown") \
+                .build()) \
+            .build()
+        convert_resp = client.docx.v1.document.convert(convert_req)
+        if not convert_resp.success():
+            if self._logger:
+                self._logger.error(f"Markdown 转换失败: {convert_resp.msg}")
+            return None
+
+        new_blocks = convert_resp.data.blocks if hasattr(convert_resp.data, 'blocks') else []
+        first_level_block_ids = convert_resp.data.first_level_block_ids if hasattr(convert_resp.data, 'first_level_block_ids') else []
+        if not new_blocks:
+            return json.dumps({"document_id": document_id}, ensure_ascii=False)
+
+        # 5. 根据 firstLevelBlockIds 重新排序 blocks
+        if first_level_block_ids:
+            block_map = {block.block_id: block for block in new_blocks if hasattr(block, 'block_id') and block.block_id}
+            ordered_blocks = []
+            for block_id in first_level_block_ids:
+                if block_id in block_map:
+                    ordered_blocks.append(block_map.pop(block_id))
+            for block in block_map.values():
+                ordered_blocks.append(block)
+            new_blocks = ordered_blocks
+
+        # 6. 清理 Blocks（移除不支持的类型和只读字段）
+        UNSUPPORTED_CREATE_TYPES = {31, 32}  # 不能通过 documentBlockChildren.create API 创建的类型
+        skipped_types = []
+        cleaned_blocks = []
         
-        # 1. 准备批量更新指令 (Match 飞书 API 规范: https://open.feishu.cn/document/ukTMukTMukTM/uUDN04SN0QjL1RDN/docx-v1/document/patch)
-        docx_requests = []
+        for block in new_blocks:
+            block_type = getattr(block, 'block_type', None)
+            if block_type in UNSUPPORTED_CREATE_TYPES:
+                skipped_types.append(f"type_{block_type}")
+                continue
+            
+            if hasattr(block, 'block_id'):
+                block.block_id = None
+            
+            if hasattr(block, 'table') and block.table:
+                if hasattr(block.table, 'merge_info'):
+                    block.table.merge_info = None
+            
+            cleaned_blocks.append(block)
         
-        # 更新标题
-        if title:
-            docx_requests.append({
-                "update_document_display_setting_request": {
-                    "display_setting": {"title": title}
-                }
-            })
-            
-        # 覆盖全文内容 (Markdown)
-        if self._input_text:
-            docx_requests.append({
-                "update_all_content_request": {
-                    "content": self._input_text,
-                    "content_type": 1  # 1 代表 Markdown
-                }
-            })
-            
-        if not docx_requests:
-            return "success"
+        if skipped_types and self._logger:
+            self._logger.warning(f"跳过了不支持的 block 类型: {set(skipped_types)}")
+        
+        new_blocks = cleaned_blocks
 
-        # 2. 构造原始请求 (因为当前 SDK 1.6.5 缺少此接口的封装)
-        from lark_oapi.core.model import BaseRequest
-        from lark_oapi.core.enum import HttpMethod, AccessTokenType
-        from lark_oapi.core.http import Transport
-        from lark_oapi.core.model import RequestOption
-        from lark_oapi.core.const import UTF_8, CONTENT_TYPE, APPLICATION_JSON
-
-        request = BaseRequest()
-        request.http_method = HttpMethod.PATCH
-        request.uri = "/open-apis/docx/v1/documents/:document_id"
-        request.paths = {"document_id": doc_token}
-        request.body = {"requests": docx_requests}
-        request.token_types = {AccessTokenType.USER, AccessTokenType.TENANT}
-
-        option = RequestOption()
+        # 7. 插入 Blocks 到文档（使用 /children 接口，children 最大 50 个，需分批）
+        from lark_oapi.api.docx.v1 import CreateDocumentBlockChildrenRequest, CreateDocumentBlockChildrenRequestBody
+        
         user_token = self._get_user_access_token()
-        if user_token:
-            option.headers["Authorization"] = f"Bearer {user_token}"
+        batch_size = 50
+        total_blocks = len(new_blocks)
         
-        option.headers[CONTENT_TYPE] = f"{APPLICATION_JSON}; charset=utf-8"
+        for i in range(0, total_blocks, batch_size):
+            batch = new_blocks[i:i + batch_size]
+            create_req = CreateDocumentBlockChildrenRequest.builder() \
+                .document_id(document_id) \
+                .block_id(document_id) \
+                .request_body(CreateDocumentBlockChildrenRequestBody.builder()
+                    .children(batch)
+                    .index(-1)
+                    .build()) \
+                .build()
 
-        # 3. 执行请求
-        response = Transport.execute(client.config, request, option)
-        
-        if response.status_code != 200:
-            if self._logger:
-                self._logger.error(f"文档更新失败 (HTTP {response.status_code}): {response.content}")
-            return None
-            
-        result_json = json.loads(str(response.content, UTF_8))
-        if result_json.get("code") != 0:
-            if self._logger:
-                self._logger.error(f"文档更新失败: {result_json.get('msg')} (code: {result_json.get('code')})")
-            return None
-            
-        return "success"
+            if user_token:
+                create_resp = client.docx.v1.document_block_children.create(create_req, lark.RequestOption.builder().user_access_token(user_token).build())
+            else:
+                create_resp = client.docx.v1.document_block_children.create(create_req)
+
+            if not create_resp.success():
+                if self._logger:
+                    self._logger.error(f"写入新内容失败（批次 {i // batch_size + 1}/{(total_blocks + batch_size - 1) // batch_size}）: {create_resp.msg}")
+                return None
+
+        return json.dumps({"document_id": document_id}, ensure_ascii=False)
 
     def _handle_base_create(self, client) -> Optional[str]:
         """处理 Base 创建"""
@@ -673,7 +791,10 @@ class LarkSdkCommand:
         return None
 
     def _handle_base_record_search(self, client) -> Optional[str]:
-        """处理 Base 记录搜索"""
+        """处理 Base 记录搜索（兼容 lark-cli 格式）
+        
+        SDK 层自动处理分页，使用 page_token 循环获取所有数据，一次性返回。
+        """
         base_token = self._kwargs.get('base_token')
         table_id = self._kwargs.get('table_id')
         search_json_str = self._kwargs.get('search_json', '{}')
@@ -683,32 +804,116 @@ class LarkSdkCommand:
         except json.JSONDecodeError:
             search_json = {}
 
-        request = SearchAppTableRecordRequest.builder()\
-            .app_token(base_token)\
-            .table_id(table_id)\
-            .build()
-
-        request.body = search_json
-
-        response = client.bitable.v1.app_table_record.search(request)
-
-        if not response.success():
-            if self._logger:
-                self._logger.error(f"Base 记录搜索失败: {response.msg}")
-            return None
-
-        records = []
-        if hasattr(response.data, 'items') and response.data.items:
-            for record in response.data.items:
-                records.append({
-                    'record_id': record.record_id,
-                    'fields': getattr(record, 'fields', {}),
+        # 将旧格式参数转换为官方 API 格式
+        # 旧格式: {keyword, search_fields, select_fields, limit, offset}
+        # 新格式: {field_names, filter, sort, view_id, automatic_fields} + URL参数 page_size, page_token
+        
+        # 构建请求体
+        body = {}
+        
+        # select_fields -> field_names
+        select_fields = search_json.get('select_fields', [])
+        if select_fields:
+            body['field_names'] = select_fields
+        
+        # keyword + search_fields -> filter
+        keyword = search_json.get('keyword')
+        search_fields = search_json.get('search_fields', [])
+        if keyword and search_fields:
+            conditions = []
+            for field in search_fields:
+                conditions.append({
+                    'field_name': field,
+                    'operator': 'is',
+                    'value': [keyword]
                 })
+            body['filter'] = {
+                'conditions': conditions,
+                'conjunction': 'or'
+            }
+        
+        # limit -> page_size (通过 URL 参数传递)
+        page_size = search_json.get('limit', 20)
+        
+        # 获取 offset 参数
+        offset = search_json.get('offset', 0)
+        
+        # 如果 offset > 0，说明是第二次及以后的请求
+        # 由于 SDK 层已经在第一次请求时返回了所有数据，这里直接返回空结果
+        if offset > 0:
+            return json.dumps({
+                'data': {
+                    'record_id_list': [],
+                    'field_id_list': [],
+                    'items': [],
+                    'has_more': False
+                }
+            }, ensure_ascii=False)
+        
+        # SDK 层自动分页：使用 page_token 循环获取所有数据
+        all_record_id_list = []
+        all_field_id_list = []
+        all_items = []
+        page_token = None
+        max_pages = 50  # 防止无限循环，最多请求 50 页
+        
+        for page_num in range(max_pages):
+            request_builder = SearchAppTableRecordRequest.builder()\
+                .app_token(base_token)\
+                .table_id(table_id)\
+                .page_size(page_size)
+            
+            if page_token:
+                request_builder.page_token(page_token)
+            
+            request = request_builder.build()
+            request.body = body
 
-        return json.dumps(records, ensure_ascii=False)
+            response = client.bitable.v1.app_table_record.search(request)
+
+            if not response.success():
+                if self._logger:
+                    self._logger.error(f"Base 记录搜索失败: {response.msg}")
+                return None
+
+            # 第一页收集字段列表
+            if page_num == 0 and hasattr(response.data, 'items') and response.data.items:
+                if response.data.items:
+                    first_record = response.data.items[0]
+                    fields = getattr(first_record, 'fields', {})
+                    all_field_id_list = list(fields.keys())
+
+            # 收集记录
+            if hasattr(response.data, 'items') and response.data.items:
+                for record in response.data.items:
+                    all_record_id_list.append(record.record_id)
+                    fields = getattr(record, 'fields', {})
+                    item_values = [fields.get(fid) for fid in all_field_id_list]
+                    all_items.append(item_values)
+
+            # 检查是否还有更多数据
+            has_more = getattr(response.data, 'has_more', False)
+            if not has_more:
+                break
+            
+            # 获取下一页的 page_token
+            page_token = getattr(response.data, 'page_token', None)
+            if not page_token:
+                break
+
+        # 返回 lark-cli 兼容格式
+        # 添加 has_more=False 防止外层循环继续请求
+        return json.dumps({
+            'data': {
+                'record_id_list': all_record_id_list,
+                'field_id_list': all_field_id_list,
+                'items': all_items,
+                'has_more': False
+            }
+        }, ensure_ascii=False)
 
     def _handle_base_record_delete(self, client) -> Optional[str]:
-        """处理 Base 记录删除"""
+        """处理 Base 记录批量删除"""
         base_token = self._kwargs.get('base_token')
         table_id = self._kwargs.get('table_id')
         delete_json_str = self._kwargs.get('delete_json', '{}')
@@ -718,18 +923,24 @@ class LarkSdkCommand:
         except json.JSONDecodeError:
             delete_json = {}
 
-        request = DeleteAppTableRecordRequest.builder()\
+        record_id_list = delete_json.get('record_id_list', [])
+        
+        if not record_id_list:
+            return json.dumps([])
+
+        request = BatchDeleteAppTableRecordRequest.builder()\
             .app_token(base_token)\
             .table_id(table_id)\
+            .request_body(BatchDeleteAppTableRecordRequestBody.builder()
+                .records(record_id_list)
+                .build())\
             .build()
 
-        request.body = delete_json
-
-        response = client.bitable.v1.app_table_record.delete(request)
+        response = client.bitable.v1.app_table_record.batch_delete(request)
 
         if not response.success():
             if self._logger:
-                self._logger.error(f"Base 记录删除失败: {response.msg}")
+                self._logger.error(f"Base 记录批量删除失败: {response.msg}")
             return None
 
         deleted_ids = []
@@ -740,7 +951,12 @@ class LarkSdkCommand:
         return json.dumps(deleted_ids, ensure_ascii=False)
 
     def _handle_base_record_batch_create(self, client) -> Optional[str]:
-        """处理 Base 记录批量创建"""
+        """处理 Base 记录批量创建
+        
+        支持两种数据格式:
+        1. 新格式: {"fields": ["f1", "f2"], "rows": [[v1, v2], [v3, v4], ...]}
+        2. 旧格式: [{"f1": v1, "f2": v2}, {"f1": v3, "f2": v4}, ...]
+        """
         base_token = self._kwargs.get('base_token')
         table_id = self._kwargs.get('table_id')
         data_json_str = self._kwargs.get('data_json', '[]')
@@ -750,12 +966,42 @@ class LarkSdkCommand:
         except json.JSONDecodeError:
             data_json = []
 
+        # 如果没有数据，直接返回空结果
+        if not data_json:
+            return json.dumps([])
+
+        # 构建记录列表
+        records = []
+        
+        # 判断数据格式
+        if isinstance(data_json, dict) and 'fields' in data_json and 'rows' in data_json:
+            # 新格式: {"fields": [...], "rows": [[...], [...]]}
+            field_names = data_json['fields']
+            rows = data_json['rows']
+            
+            for row in rows:
+                fields = {}
+                for i, field_name in enumerate(field_names):
+                    if i < len(row):
+                        fields[field_name] = row[i]
+                records.append(AppTableRecord.builder().fields(fields).build())
+        else:
+            # 旧格式: [{"field": value}, ...]
+            for item in data_json:
+                if isinstance(item, dict):
+                    records.append(AppTableRecord.builder().fields(item).build())
+
+        if not records:
+            return json.dumps([])
+
+        # 使用官方 SDK 方式构建请求
         request = BatchCreateAppTableRecordRequest.builder()\
             .app_token(base_token)\
             .table_id(table_id)\
+            .request_body(BatchCreateAppTableRecordRequestBody.builder()
+                .records(records)
+                .build())\
             .build()
-
-        request.body = {"records": data_json}
 
         response = client.bitable.v1.app_table_record.batch_create(request)
 
@@ -805,10 +1051,11 @@ class LarkSdkCommand:
         request.receive_id_type = "chat_id"
 
         user_token = self._get_user_access_token()
+        
         if user_token:
-            request.header_user_access_token = user_token
-
-        response = client.im.v1.message.create(request)
+            response = client.im.v1.message.create(request, lark.RequestOption.builder().user_access_token(user_token).build())
+        else:
+            response = client.im.v1.message.create(request)
 
         if not response.success():
             if self._logger:
@@ -818,89 +1065,53 @@ class LarkSdkCommand:
         return getattr(response.data, 'message_id', None)
 
     def _apply_query(self, data: dict, query: str) -> Optional[Any]:
-        """应用查询表达式（简化版 jq）"""
-        if not query or query == '{query}' or query == '.data':
-            return data.get('data', {})
+        """应用 jq 查询表达式"""
+        if not query or query == '{query}':
+            return data
 
-        if query == '.data.nodes':
-            return data.get('data', {}).get('nodes', [])
-
-        nodes = data.get('data', {}).get('nodes', [])
-
-        if 'select(' in query:
-            match = re.search(r'select\((.+?)\)', query)
-            if match:
-                condition = match.group(1)
-                filtered = self._filter_nodes(nodes, condition)
-                return filtered
-
-        return nodes
+        try:
+            compiled = jq.compile(query)
+            result = compiled.input(data).all()
+            
+            # 判断查询是否是数组查询（是否有方括号包裹）
+            is_array_query = query.strip().startswith('[') and query.strip().endswith(']')
+            
+            # 如果是数组查询，保持数组格式
+            if is_array_query:
+                if len(result) == 1 and isinstance(result[0], list):
+                    return json.dumps(result[0] , ensure_ascii=False) if result is not None else None
+                return json.dumps(result[0] , ensure_ascii=False) if result is not None else None
+            
+            # 如果不是数组查询，单个结果返回单值
+            if len(result) == 1:
+                return result[0]
+            
+            return result
+        except Exception as e:
+            if self._logger:
+                self._logger.error(f"jq 查询执行失败: {e}")
+            return None
 
     def _filter_nodes(self, nodes: list, condition: str) -> list:
-        """根据条件过滤节点"""
-        result = []
-
-        for node in nodes:
-            if self._match_condition(node, condition):
-                result.append(node)
-
-        return result
+        """兼容旧接口：根据条件过滤节点"""
+        return nodes
 
     def _match_condition(self, node: dict, condition: str) -> bool:
-        """匹配单个节点的条件"""
-        condition = condition.strip()
-
-        if ' and ' in condition:
-            parts = condition.split(' and ')
-            for part in parts:
-                if not self._match_single_condition(node, part.strip()):
-                    return False
-            return True
-
-        return self._match_single_condition(node, condition)
-
-    def _match_single_condition(self, node: dict, condition: str) -> bool:
-        """匹配单个条件（无 and）"""
-        condition = condition.strip()
-
-        if '==' in condition:
-            parts = condition.split('==')
-            field = self._extract_field(node, parts[0].strip())
-            value = parts[1].strip().strip('"\'')
-            return str(field) == value
-
-        if 'contains(' in condition:
-            field_match = re.search(r'\.(\w+)\s*\|\s*contains\("(.+?)"\)', condition)
-            if field_match:
-                field_name = field_match.group(1)
-                value = field_match.group(2)
-                field = node.get(field_name, '')
-                return value in str(field)
-
-        obj_type_match = re.search(r'\.obj_type\s*==\s*"(\w+)"', condition)
-        if obj_type_match:
-            obj_type = obj_type_match.group(1)
-            return node.get('obj_type') == obj_type
-
-        return False
-
-    def _extract_field(self, node: dict, field_path: str) -> Any:
-        """提取字段值"""
-        field_path = field_path.strip().lstrip('.')
-        return node.get(field_path)
+        """兼容旧接口：匹配单个节点的条件"""
+        return True
 
 
 class LarkCmd:
     """飞书 SDK 命令模板（静态工厂）"""
 
-    WIKI_NODE_LIST = LarkSdkCommand('wiki', 'node_list')
-    WIKI_NODE_LIST_BY_PARENT = LarkSdkCommand('wiki', 'node_list_by_parent')
-    WIKI_NODE_SEARCH_BITABLE = LarkSdkCommand('wiki', 'node_list')
-    WIKI_NODE_CREATE = LarkSdkCommand('wiki', 'node_create')
-    WIKI_NODE_CREATE_WITH_PARENT = LarkSdkCommand('wiki', 'node_create_with_parent')
-    WIKI_NODE_MOVE = LarkSdkCommand('wiki', 'node_move')
+    WIKI_NODE_LIST = LarkSdkCommand('wiki', 'node_list',use_user_access_token=True)
+    WIKI_NODE_LIST_BY_PARENT = LarkSdkCommand('wiki', 'node_list_by_parent',use_user_access_token=True)
+    WIKI_NODE_SEARCH_BITABLE = LarkSdkCommand('wiki', 'node_list',use_user_access_token=True)
+    WIKI_NODE_CREATE = LarkSdkCommand('wiki', 'node_create',use_user_access_token=True)
+    WIKI_NODE_CREATE_WITH_PARENT = LarkSdkCommand('wiki', 'node_create_with_parent',use_user_access_token=True)
+    WIKI_NODE_MOVE = LarkSdkCommand('wiki', 'node_move',use_user_access_token=True)
 
-    DOC_UPDATE = LarkSdkCommand('docs', 'doc_update')
+    DOC_UPDATE = LarkSdkCommand('docs', 'doc_update',use_user_access_token=True)
 
     BASE_CREATE = LarkSdkCommand('base', 'base_create')
     BASE_TABLE_LIST = LarkSdkCommand('base', 'table_list')

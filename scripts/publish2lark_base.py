@@ -229,7 +229,7 @@ class LarkBasePublisher:
 
     def _delete_today_records(self) -> int:
         """删除当天日期的所有记录（使用搜索过滤，支持分页）"""
-        date_field_id = self.field_name_to_id.get('daily_report_time')
+        date_field_id = "daily_report_time"
         if not date_field_id:
             self.logger.warning("date字段不存在，跳过删除操作")
             return 0
@@ -325,6 +325,9 @@ class LarkBasePublisher:
         
         # 获取所有可写字段的ID列表
         field_ids = [fid for fid in self.field_name_to_id.values() if fid]
+
+        field_names = [fid for fid in self.field_name_to_id.keys() if fid]
+
         
         if not field_ids:
             self.logger.error("没有可写的字段")
@@ -366,7 +369,7 @@ class LarkBasePublisher:
         uploaded = 0
         for i in range(0, len(rows), batch_size):
             batch = rows[i:i+batch_size]
-            data = json.dumps({"fields": field_ids, "rows": batch}, ensure_ascii=False)
+            data = json.dumps({"fields": field_names, "rows": batch}, ensure_ascii=False)
 
             result = LarkCmd.BASE_RECORD_BATCH_CREATE.args(
                 base_token=self.base_token,

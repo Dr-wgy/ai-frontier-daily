@@ -1,58 +1,90 @@
-"""LarkCommander — 封装 lark-cli 命令为链式调用对象"""
+"""LarkCommander — 桥接层，根据配置动态选择实现"""
 
 from __future__ import annotations
 
-import subprocess
+import json
+import logging
+from pathlib import Path
 from typing import Optional
 
+# 配置日志
+logger = logging.getLogger(__name__)
 
-class _LarkCommand:
-    """lark-cli 命令实例（由 LarkCmd.args() 创建）"""
 
-    def __init__(self, template: list[str]):
-        self._template = template
-        self._kwargs: dict = {}
-        self._input_text: Optional[str] = None
+def _get_use_sdk() -> bool:
+    """从配置文件读取是否使用 SDK 模式"""
+    project_root = Path(__file__).parent.parent.parent
+    secrets_path = project_root / 'config' / 'secrets.json'
+    
+    try:
+        with open(secrets_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+            feishu_config = config.get('feishu', {})
+            return feishu_config.get('use_sdk', False)
+    except Exception as e:
+        logger.warning(f"读取配置失败，默认使用 SDK 模式: {e}")
+        return True
 
-    def args(self, **kwargs) -> '_LarkCommand':
-        """设置命令模板中的占位符参数"""
-        self._kwargs.update(kwargs)
-        return self
 
-    def input(self, text: str) -> '_LarkCommand':
-        """设置 stdin 输入内容（如文档正文）"""
-        self._input_text = text
-        return self
+# 根据配置选择实现
+if _get_use_sdk():
+    # 使用 Python SDK 实现
+    try:
+        from .lark_sdk_commander import LarkCmd as LarkSdkCmd, LarkClient, LarkSdkCommand
+        
+        # 对外暴露与原接口完全一致的类名
+        LarkCmd = LarkSdkCmd
+        _LarkCommand = LarkSdkCommand
+        
+        # 辅助函数桥接（如有需要）
+        def get_lark_client():
+            return LarkClient()
 
-    def run(self, logger=None) -> Optional[str]:
-        """执行 lark-cli 命令
+        logger.info("LarkCommander: 已切换至 Python SDK 实现（带自动刷新功能）")
 
-        Args:
-            logger: 可选 logger 实例，用于记录错误日志
+    except ImportError as e:
+        # SDK 模块不可用，回退至 CLI 模式
+        logger.error(f"LarkCommander: SDK 导入失败 ({e})，回退至 CLI 模式")
+        use_sdk = False
+else:
+    # 配置指定使用 CLI 模式
+    logger.info("LarkCommander: 配置指定使用 CLI 模式")
+    use_sdk = False
 
-        Returns:
-            命令执行成功返回 stdout（去除空白和 'null'），失败返回 None
-        """
-        cmd_args = [arg.format(**self._kwargs) for arg in self._template]
 
-        result = subprocess.run(
-            ['lark-cli'] + cmd_args,
-            capture_output=True,
-            text=True,
-            encoding='utf-8',
-            input=self._input_text
-        )
+# CLI 模式实现（如果上面没有使用 SDK）
+if 'use_sdk' in locals() and not use_sdk:
+    import subprocess
 
-        if result.returncode != 0:
-            msg = f"命令执行失败: {' '.join(cmd_args)}"
-            if result.stderr:
-                msg += f" - {result.stderr.strip()}"
-            if logger:
-                logger.error(msg)
-            return None
+    class _LarkCommand:
+        """lark-cli 命令实例（回退模式）"""
+        def __init__(self, template: list[str]):
+            self._template = template
+            self._kwargs: dict = {}
+            self._input_text: Optional[str] = None
 
-        output = result.stdout.strip()
-        return output if output and output != 'null' else None
+        def args(self, **kwargs) -> '_LarkCommand':
+            self._kwargs.update(kwargs)
+            return self
+
+        def input(self, text: str) -> '_LarkCommand':
+            self._input_text = text
+            return self
+
+        def run(self, logger=None) -> Optional[str]:
+            cmd_args = [arg.format(**self._kwargs) for arg in self._template]
+            result = subprocess.run(
+                ['lark-cli'] + cmd_args,
+                capture_output=True,
+                text=True,
+                encoding='utf-8',
+                input=self._input_text
+            )
+            if result.returncode != 0:
+                if logger: logger.error(f"CLI 回退执行失败: {result.stderr}")
+                return None
+            output = result.stdout.strip()
+            return output if output and output != 'null' else None
 
 
 class LarkCmd:
@@ -73,7 +105,7 @@ class LarkCmd:
     BASE_CREATE = _LarkCommand(['base', '+base-create', '--name', '{name}', '--time-zone', '{timezone}', '--format', 'json', '-q', '.data.base.base_token'])
     BASE_TABLE_LIST = _LarkCommand(['base', '+table-list', '--base-token', '{base_token}', '-q', '.data.tables'])
     BASE_TABLE_CREATE = _LarkCommand(['base', '+table-create', '--base-token', '{base_token}', '--json', '{table_json}', '--format', 'json', '-q', '.data.table.id'])
-    BASE_FIELD_LIST = _LarkCommand(['base', '+field-list', '--base-token', '{base_token}', '--table-id', '{table_id}', '-q', '[.data.fields[] | {field_id: .id, name: .name, type: .type}]'])
+    BASE_FIELD_LIST = _LarkCommand(['base', '+field-list', '--base-token', '{base_token}', '--table-id', '{table_id}', '-q', '[.data.fields[] | {{field_id: .id, name: .name, type: .type}}]'])
     BASE_FIELD_CREATE = _LarkCommand(['base', '+field-create', '--base-token', '{base_token}', '--table-id', '{table_id}', '--json', '{field_json}', '-q', '.data.field.id'])
     BASE_RECORD_SEARCH = _LarkCommand(['base', '+record-search', '--base-token', '{base_token}', '--table-id', '{table_id}', '--json', '{search_json}', '--format', 'json'])
     BASE_RECORD_DELETE = _LarkCommand(['base', '+record-delete', '--base-token', '{base_token}', '--table-id', '{table_id}', '--json', '{delete_json}', '--yes', '-q', '.data.deleted_record_id_list'])
