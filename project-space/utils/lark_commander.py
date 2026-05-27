@@ -57,6 +57,10 @@ if 'use_sdk' in locals() and not use_sdk:
 
     class _LarkCommand:
         """lark-cli 命令实例（回退模式）"""
+        
+        # 需要过滤内部字段的命令列表
+        _FILTER_COMMANDS = {'base', '+record-batch-create'}
+        
         def __init__(self, template: list[str]):
             self._template = template
             self._kwargs: dict = {}
@@ -69,9 +73,32 @@ if 'use_sdk' in locals() and not use_sdk:
         def input(self, text: str) -> '_LarkCommand':
             self._input_text = text
             return self
+        
+        def _filter_internal_fields(self, kwargs: dict) -> dict:
+            """过滤 SDK 模式专用的内部字段，避免 CLI 模式下传递给 API"""
+            filtered = kwargs.copy()
+            
+            # 检查是否是需要过滤的命令
+            cmd_str = ' '.join(self._template)
+            if '+record-batch-create' in cmd_str:
+                data_json = kwargs.get('data_json')
+                if data_json:
+                    try:
+                        data = json.loads(data_json)
+                        # 移除 SDK 专用的内部字段
+                        if isinstance(data, dict) and 'field_types' in data:
+                            data = {k: v for k, v in data.items() if k != 'field_types'}
+                            filtered['data_json'] = json.dumps(data, ensure_ascii=False)
+                    except json.JSONDecodeError:
+                        pass
+            
+            return filtered
 
         def run(self, logger=None) -> Optional[str]:
-            cmd_args = [arg.format(**self._kwargs) for arg in self._template]
+            # 过滤内部字段（仅 CLI 模式需要）
+            filtered_kwargs = self._filter_internal_fields(self._kwargs)
+            cmd_args = [arg.format(**filtered_kwargs) for arg in self._template]
+            
             result = subprocess.run(
                 ['lark-cli'] + cmd_args,
                 capture_output=True,
