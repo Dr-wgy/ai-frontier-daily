@@ -104,7 +104,8 @@ system: $$$$|
 9. `stats` 包含全部 4 个必需字段
 10. `stats.output_count` 等于 `items.length`
 11. `stats.dropped_count` 等于 `input_count - output_count`
-12. 仅输出合法 JSON，无 Markdown 代码围栏，无前后说明文字
+12. **仅输出合法 JSON**，无 Markdown 代码围栏，无前后说明文字
+13. **字符串转义**：字符串内部的双引号 `"` 必须使用反斜杠转义，即 `\"`。禁止出现未转义的双引号
 
 system: |$$$$
 
