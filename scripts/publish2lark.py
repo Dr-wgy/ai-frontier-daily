@@ -21,6 +21,7 @@ sys.path.insert(0, str(_PROJECT_ROOT / 'project-space'))
 from utils.work_module import WorkModule
 from utils.base_config import FN_BRIEFING_FEISHU
 from utils.lark_commander import LarkCmd
+#todo: 之后废弃掉 LarkCmd直接sdk 调用 兼容过程太麻烦了
 
 
 class LarkWikiPublisher(WorkModule):
@@ -103,7 +104,7 @@ class LarkWikiPublisher(WorkModule):
         for token in nodes:
             if token and token != 'null':
                 self.logger.info(f"移动文档 {token} 至回收站...")
-                if LarkCmd.WIKI_NODE_MOVE.args(node_token=token, target_token=trash_token).run():
+                if LarkCmd.WIKI_NODE_MOVE.args(node_token=token, target_parent_token=trash_token, space_id=self.space_id).run():
                     moved += 1
         self.logger.info(f"已将 {moved} 个旧文档移入回收站")
     

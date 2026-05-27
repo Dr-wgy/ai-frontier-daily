@@ -65,8 +65,8 @@ assembly:
 llm:
   default_temperature: 0.3            # 默认温度参数（0-1，越低越确定性）
   default_max_tokens: 81920           # 默认最大生成token数
-  filter_rank_max_tokens: 8192       # 筛选排序阶段最大token数
-  summarize_max_tokens: 20480        # 摘要生成阶段最大token数
+  filter_rank_max_tokens: 81920       # 筛选排序阶段最大token数
+  summarize_max_tokens: 81920        # 摘要生成阶段最大token数
   summarize_item_cap: 1800           # 单条新闻摘要字符上限
 
 # ----------------------------------------------- 协议层 ----------------------------------------------- #

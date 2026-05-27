@@ -266,15 +266,16 @@ class FeishuBotPusher:
             raise ValueError('缺少 chat-id 配置')
 
         content = json.dumps(payload['card'], ensure_ascii=False)
-        result = LarkCmd.IM_MESSAGE_SEND.args(
+        message_id = LarkCmd.IM_MESSAGE_SEND.args(
             chat_id=chat_id,
             content=content
         ).run(logger=self.logger)
 
-        if result is None:
+        if message_id is None:
             raise RuntimeError('lark-cli 推送失败')
 
-        return json.loads(result) if result else {}
+        # 返回消息 ID 响应
+        return {'message_id': message_id} if message_id else {}
 
     def _load_chat_id_from_secrets(self) -> str | None:
         """从 secrets.json 加载 chat_id"""

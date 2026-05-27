@@ -345,7 +345,8 @@ class FilterRankModule(WorkModule):
         # Step 1: LLM 筛选和关键词提取
         self.logger.info("Step 1: 开始 LLM 筛选和关键词提取")
         system, user = self._build_prompts(news_items)
-        data = self.llm_client.call_json(system, user)
+        max_tokens = self._app_config.links.llm.filter_rank_max_tokens
+        data = self.llm_client.call_json(system, user, max_tokens=max_tokens)
         llm_items = FilteredItem.from_llm_response(data)
         self.logger.info(f"LLM 筛选完成，通过 {len(llm_items)} 条")
 
