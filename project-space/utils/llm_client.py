@@ -86,19 +86,48 @@ class LLMClient:
             max_tokens = self._cfg.get('default_max_tokens', 20480)
         content = self.call(system, user, temperature, max_tokens)
 
+        extracted_content = None
+        error_info = []
+
         if match := re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', content):
+            extracted_content = match.group(1)
+            error_info.append(f"尝试解析代码块中的 JSON")
             try:
-                return json.loads(match.group(1))
-            except json.JSONDecodeError:
-                pass
+                return json.loads(extracted_content)
+            except json.JSONDecodeError as e:
+                error_info.append(f"代码块解析失败: {e}")
 
         if match := re.search(r'\{[\s\S]*\}', content):
+            extracted_content = match.group()
+            error_info.append(f"尝试解析大括号包围的内容")
             try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
+                return json.loads(extracted_content)
+            except json.JSONDecodeError as e:
+                error_info.append(f"大括号内容解析失败: {e}")
 
+        extracted_content = content
+        error_info.append(f"尝试解析原始内容")
         try:
             return json.loads(content)
         except json.JSONDecodeError as e:
-            raise RuntimeError(f"LLM 返回内容 JSON 解析失败: {e}\n内容片段: {content[:200]}...") from e
+            self._logger.error(f"JSON 解析失败详情:")
+            self._logger.error(f"  错误类型: {type(e).__name__}")
+            self._logger.error(f"  错误位置: 第 {e.lineno} 行, 第 {e.colno} 列")
+            self._logger.error(f"  错误原因: {e.msg}")
+            self._logger.error(f"  解析尝试: {' → '.join(error_info)}")
+            self._logger.error(f"  内容长度: {len(content)} 字符")
+            
+            context_start = max(0, e.pos - 50) if hasattr(e, 'pos') else max(0, (e.lineno-1)*80 - 50)
+            context_end = min(len(content), context_start + 200)
+            context = content[context_start:context_end]
+            self._logger.error(f"  错误位置上下文 ({context_start}-{context_end}):")
+            self._logger.error(f"    ...{context}...")
+            
+            self._logger.error(f"  完整内容前500字符:")
+            self._logger.error(f"    {content[:500]}")
+            
+            if len(content) > 500:
+                self._logger.error(f"  完整内容后500字符:")
+                self._logger.error(f"    {content[-500:]}")
+
+            raise RuntimeError(f"LLM 返回内容 JSON 解析失败: {e}") from e

@@ -106,8 +106,9 @@ class SummarizeModule(WorkModule):
 
         # 构建提示词并调用 LLM
         system, user = self._build_prompts(clusters)
+        max_tokens = self._app_config.links.llm.summarize_max_tokens
         self.logger.info("调用 LLM 进行集群汇总...")
-        data = self.llm_client.call_json(system, user)
+        data = self.llm_client.call_json(system, user, max_tokens=max_tokens)
 
         # 提取 LLM 返回的集群摘要数据
         by_cluster, drop = self._extract_cluster_articles(data)
