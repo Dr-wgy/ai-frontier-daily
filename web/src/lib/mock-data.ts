@@ -40,6 +40,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "英伟达在 GTC 春季活动中正式揭幕 B300 系列加速卡，FP4 算力较 B200 提升约 50%，单卡 HBM4 显存达 288GB，预计 Q3 量产。",
       pub_time: "2026-05-21 08:30:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI 基石与算力",
       sub_section: "AI 芯片",
       relevance: 0.96,
@@ -67,6 +68,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "中科曙光联合安徽省政府在合肥滨湖科学城建设的智算中心二期完成验收，新增 50 EFLOPS 算力，已与超过 30 家大模型企业签订合作协议。",
       pub_time: "2026-05-21 09:15:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI 基石与算力",
       sub_section: "算力中心",
       relevance: 0.78,
@@ -92,6 +94,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "DeepSeek 团队在 GitHub 与 Hugging Face 同步发布 V4 系列模型，提供 16B/120B 激活参数两档选择，原生支持 256 万 tokens 上下文窗口。",
       pub_time: "2026-05-21 07:50:00",
+      daily_report_time: "2026-05-21",
       main_section: "大模型与核心技术",
       sub_section: "开源模型",
       relevance: 0.97,
@@ -119,6 +122,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "谷歌 DeepMind 公布 Gemini 3 Pro 在权威代码评测 SWE-Bench Verified 上得分 81.2%，刷新榜单纪录，并将 IO 大会演示纳入 Code Assist 产品。",
       pub_time: "2026-05-21 10:20:00",
+      daily_report_time: "2026-05-21",
       main_section: "大模型与核心技术",
       sub_section: "闭源模型",
       relevance: 0.9,
@@ -145,6 +149,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "Anthropic 在开发者大会发布 Claude Agent SDK 2.0，新增 browser、screen、file_system 三类原生工具，并内置可持久化长任务记忆。",
       pub_time: "2026-05-21 11:00:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI 智能体与交互",
       sub_section: "Agent 框架",
       relevance: 0.93,
@@ -172,6 +177,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "字节跳动旗下扣子（Coze）平台推出企业版，原生支持多智能体编排（Multi-Agent）、私有化部署及与飞书的深度集成。",
       pub_time: "2026-05-21 09:40:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI 智能体与交互",
       sub_section: "智能体平台",
       relevance: 0.82,
@@ -198,6 +204,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "腾讯医典联合北大医学院发布 MedicX 医疗诊断大模型，覆盖 32 个临床科室，在多病种鉴别诊断准确率上超过主治医师平均水平。",
       pub_time: "2026-05-21 10:50:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI+ 垂直应用",
       sub_section: "医疗",
       relevance: 0.85,
@@ -225,6 +232,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "理想汽车官方宣布 AD Max V5 城市领航 NOA 全量推送，底层架构完全转向端到端神经网络，删除超过 30 万行规则代码。",
       pub_time: "2026-05-21 08:00:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI+ 垂直应用",
       sub_section: "智能驾驶",
       relevance: 0.88,
@@ -252,6 +260,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "OpenAI 完成由软银、微软、Thrive 等领投的 400 亿美元新一轮融资，公司投后估值达到 5000 亿美元，募资将用于数据中心建设。",
       pub_time: "2026-05-21 06:30:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI 产业与观察",
       sub_section: "投融资",
       relevance: 0.94,
@@ -279,6 +288,7 @@ const briefing_2026_05_21: Briefing = {
       summary:
         "欧盟委员会确认 AI 法案高风险类别条款将于 2026 年 8 月 2 日起强制执行，涉及合规义务包括数据治理、风险管理、人类监督等。",
       pub_time: "2026-05-21 11:30:00",
+      daily_report_time: "2026-05-21",
       main_section: "AI 产业与观察",
       sub_section: "政策监管",
       relevance: 0.83,
@@ -338,6 +348,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "华为海思在内部技术大会确认昇腾 920 流片成功，FP16 算力 1.8 PFLOPS，HBM3e 显存 192GB，目标 2026 年底量产。",
       pub_time: "2026-05-20 09:00:00",
+      daily_report_time: "2026-05-20",
       main_section: "AI 基石与算力",
       sub_section: "AI 芯片",
       relevance: 0.94,
@@ -364,6 +375,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "阿里通义千问团队发布 Qwen4 系列，包含 4B/32B 激活两档以及视觉、代码、Math 三个领域专用版本，整体能力对齐 Claude 4.5。",
       pub_time: "2026-05-20 10:00:00",
+      daily_report_time: "2026-05-20",
       main_section: "大模型与核心技术",
       sub_section: "开源模型",
       relevance: 0.92,
@@ -390,6 +402,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "Mistral AI 发布 Mixtral-Next 系列，140B 总参 / 23B 激活，首次将工具调用与多轮交互纳入预训练后期 RLHF 流程。",
       pub_time: "2026-05-20 11:20:00",
+      daily_report_time: "2026-05-20",
       main_section: "大模型与核心技术",
       sub_section: "开源模型",
       relevance: 0.78,
@@ -416,6 +429,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "OpenAI 发布 Operator v2，浏览器智能体能够独立完成跨网站、跨账号的复杂任务，平均成功率提升至 78%。",
       pub_time: "2026-05-20 08:30:00",
+      daily_report_time: "2026-05-20",
       main_section: "AI 智能体与交互",
       sub_section: "浏览器 Agent",
       relevance: 0.86,
@@ -442,6 +456,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "京东云推出面向中小商家的 AI 客服全栈解决方案，整合大模型、知识库、声音克隆、工单系统，单坐席月费 199 元起。",
       pub_time: "2026-05-20 09:50:00",
+      daily_report_time: "2026-05-20",
       main_section: "AI+ 垂直应用",
       sub_section: "电商",
       relevance: 0.74,
@@ -468,6 +483,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "波士顿动力宣布全电动版 Atlas 工业型号 ATLAS-W 在现代汽车蔚山工厂完成产线集成，可完成搬运、装配、检测等 30 余类任务。",
       pub_time: "2026-05-20 12:00:00",
+      daily_report_time: "2026-05-20",
       main_section: "AI+ 垂直应用",
       sub_section: "具身智能",
       relevance: 0.84,
@@ -494,6 +510,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "微软宣布重组 AI 业务，Mustafa Suleyman 出任新成立的“Microsoft Consumer AI”CEO，负责整合 Copilot、Bing、Edge AI 等业务。",
       pub_time: "2026-05-20 07:30:00",
+      daily_report_time: "2026-05-20",
       main_section: "AI 产业与观察",
       sub_section: "组织变动",
       relevance: 0.81,
@@ -520,6 +537,7 @@ const briefing_2026_05_20: Briefing = {
       summary:
         "本周国内 AI 领域披露 9 起融资，覆盖大模型、Agent、机器人与垂直应用，总融资额约 47 亿元人民币。",
       pub_time: "2026-05-20 17:00:00",
+      daily_report_time: "2026-05-20",
       main_section: "AI 产业与观察",
       sub_section: "投融资",
       relevance: 0.7,
@@ -577,6 +595,7 @@ const briefing_2026_05_19: Briefing = {
       summary:
         "SK 海力士在投资者沟通会披露 HBM4 工程样品良率已突破 70%，预计 2026 年第三季度进入大规模量产。",
       pub_time: "2026-05-19 09:10:00",
+      daily_report_time: "2026-05-19",
       main_section: "AI 基石与算力",
       sub_section: "存储",
       relevance: 0.79,
@@ -603,6 +622,7 @@ const briefing_2026_05_19: Briefing = {
       summary:
         "Anthropic 发布 Claude 4.7 1M Context 版本，新增 1M tokens 上下文窗口选项，重点强化长文档分析、代码仓库理解与企业知识检索。",
       pub_time: "2026-05-19 10:20:00",
+      daily_report_time: "2026-05-19",
       main_section: "大模型与核心技术",
       sub_section: "闭源模型",
       relevance: 0.93,
@@ -629,6 +649,7 @@ const briefing_2026_05_19: Briefing = {
       summary:
         "智谱发布 AutoGLM v3，新增原生 Android 应用代理能力，可在手机上自动执行点外卖、购票、收发消息等任务。",
       pub_time: "2026-05-19 11:00:00",
+      daily_report_time: "2026-05-19",
       main_section: "AI 智能体与交互",
       sub_section: "手机 Agent",
       relevance: 0.84,
@@ -655,6 +676,7 @@ const briefing_2026_05_19: Briefing = {
       summary:
         "Adobe Max 大会发布 Firefly 5，新增原生视频生成能力，单镜头长度最长 60 秒，并与 Premiere Pro 实现剪辑工作流无缝集成。",
       pub_time: "2026-05-19 09:40:00",
+      daily_report_time: "2026-05-19",
       main_section: "AI+ 垂直应用",
       sub_section: "创意工具",
       relevance: 0.86,
@@ -681,6 +703,7 @@ const briefing_2026_05_19: Briefing = {
       summary:
         "Meta 发布与 EssilorLuxottica 联合开发的 RayBan-3 智能眼镜，搭载本地 LLM 推理芯片，支持实时翻译、信息流摘要与第一人称视频生成。",
       pub_time: "2026-05-19 08:00:00",
+      daily_report_time: "2026-05-19",
       main_section: "AI+ 垂直应用",
       sub_section: "AI 硬件",
       relevance: 0.82,
@@ -707,6 +730,7 @@ const briefing_2026_05_19: Briefing = {
       summary:
         "中国信通院联合多家头部企业发布《大模型安全治理白皮书 (2026)》，提出分级评估、红队测试、内容溯源等十大治理建议。",
       pub_time: "2026-05-19 14:00:00",
+      daily_report_time: "2026-05-19",
       main_section: "AI 产业与观察",
       sub_section: "安全治理",
       relevance: 0.7,
@@ -733,6 +757,7 @@ const briefing_2026_05_19: Briefing = {
       summary:
         "Hugging Face 公布上周下载榜，国产开源模型 Qwen4-32B、DeepSeek-V4、智谱 GLM-5 分别位列第一、第二与第五。",
       pub_time: "2026-05-19 16:30:00",
+      daily_report_time: "2026-05-19",
       main_section: "AI 产业与观察",
       sub_section: "生态",
       relevance: 0.72,
