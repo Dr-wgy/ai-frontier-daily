@@ -116,7 +116,7 @@ async function getBriefingsMap(): Promise<Record<string, Briefing>> {
   if (_briefingsCache && Date.now() - _briefingsCacheTime < CACHE_TTL) {
     return _briefingsCache;
   }
-
+  console.log("[content] 从飞书读取数据");
   if (!isFeishuEnabled()) {
     console.log("[content] 飞书未配置，使用 mock 数据");
     return MOCK_BRIEFINGS;

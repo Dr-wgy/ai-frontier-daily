@@ -11,6 +11,10 @@ import {
 import { SECTION_LABELS, SECTION_ORDER } from "@/lib/types";
 import { formatChineseDate, weekdayCN } from "@/lib/utils";
 
+// Ensure "今日早报" is rendered with fresh data at request time (avoid build-time staleness on Vercel).
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function HomePage() {
   const briefing = await getLatestBriefingAsync();
   const date = await getLatestDateAsync();
