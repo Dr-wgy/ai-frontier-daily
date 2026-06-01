@@ -496,7 +496,7 @@ class LarkSdkCommand:
                 return None
 
             items = []
-            response_items = response.data.items if hasattr(response.data, 'items') else []
+            response_items = response.data.items if (hasattr(response.data, 'items') and response.data.items is not None) else []
             for item in response_items:
                 if hasattr(item, 'node_token'):
                     items.append({
