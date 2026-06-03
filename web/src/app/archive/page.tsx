@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   description: "AI 前沿日报往期早报归档列表。",
 };
 
+// Ensure archive page displays latest data (avoid build-time staleness on Vercel).
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function ArchivePage() {
   const summaries = await getAllBriefingSummariesAsync();
 
